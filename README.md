@@ -18,9 +18,11 @@ pip install edilkamin
 import edilkamin
 token = edilkamin.sign_in(username, password)
 edilkamin.device_info(token, mac_address)
+edilkamin.set_power_off(token, mac_address)
 ```
 
 ## Tests
+
 ```sh
 make test
 ```

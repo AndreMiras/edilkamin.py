@@ -20,6 +20,11 @@ token = edilkamin.sign_in(username, password)
 edilkamin.device_info(token, mac_address)
 ```
 
+## Tests
+```sh
+make test
+```
+
 ## Motivations
 
 - providing an open source web alternative

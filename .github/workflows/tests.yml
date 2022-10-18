@@ -16,3 +16,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: pip install tox
+      - run: tox -e py
+      - name: Linter
+        if: matrix.python == '3.10'
+        run: make lint

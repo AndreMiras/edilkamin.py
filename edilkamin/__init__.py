@@ -31,6 +31,7 @@ def main():
     user = sign_in(username, password)
     token = user._metadata["access_token"]
     info = device_info(token, mac_address)
+    print(info)
 
 
 if __name__ == "__main__":

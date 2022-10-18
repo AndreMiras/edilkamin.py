@@ -1,8 +1,7 @@
 # Edilkamin.py
 
 [![Tests](https://github.com/AndreMiras/edilkamin.py/workflows/Tests/badge.svg)](https://github.com/AndreMiras/edilkamin.py/actions/workflows/tests.yml)
-[![Documentation](https://github.com/AndreMiras/edilkamin.py/workflows/Documentation/badge.svg)](https://github.com/AndreMiras/edilkamin.py/actions/workflows/documentation.yml)
-[![npm version](https://badge.fury.io.py/edilkamin.svg)](https://badge.fury.io.py/edilkamin)
+[![PyPI version](https://badge.fury.io/py/edilkamin.svg)](https://badge.fury.io/py/edilkamin)
 
 This is a library for the [Reverse Engineered](https://medium.com/@andre.miras/edilkamin-stove-reverse-engineering-54c8f7af6b54) "The Mind" Edilkamin API.
 The Mind offers an app/API to remote control the Edilkamin pellet stoves.

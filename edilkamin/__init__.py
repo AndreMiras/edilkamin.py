@@ -24,10 +24,16 @@ def device_info(token: str, mac: str):
     return response.json()
 
 
+def assert_env(name: str) -> str:
+    env = os.environ.get(name)
+    assert env
+    return env
+
+
 def main():
-    assert (username := os.environ.get("USERNAME"))
-    assert (password := os.environ.get("PASSWORD"))
-    assert (mac_address := os.environ.get("MAC_ADDRESS"))
+    username = assert_env("USERNAME")
+    password = assert_env("PASSWORD")
+    mac_address = assert_env("MAC_ADDRESS")
     user = sign_in(username, password)
     token = user._metadata["access_token"]
     info = device_info(token, mac_address)

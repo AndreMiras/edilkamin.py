@@ -28,6 +28,7 @@ git push origin release/$VERSION
 ```
 
 Once the pull requests is approved/merged, tag the `main` branch with the version.
+In the case of a sole owner, no pull request is required, but at least verify the CI builds green.
 
 ```sh
 git checkout main
@@ -38,7 +39,7 @@ git push --tags
 
 ## Publish to PyPI
 
-This process is handled automatically by [GitHub Actions](https://github.com/AndreMiras/edilkamin/actions/workflows/pypi-release.yml).
+This process is handled automatically by [GitHub Actions](https://github.com/AndreMiras/edilkamin.py/actions/workflows/pypi-release.yml).
 If needed below are the instructions to perform it manually.
 Build it:
 

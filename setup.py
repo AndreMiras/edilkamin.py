@@ -35,6 +35,7 @@ setup_params = {
     "extras_require": {
         "dev": [
             "black",
+            "coveralls",
             "flake8",
             "isort",
             "pytest",

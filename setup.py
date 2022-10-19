@@ -38,6 +38,9 @@ setup_params = {
             "coveralls",
             "flake8",
             "isort",
+            # fixes readthedocs build, refs:
+            # https://github.com/readthedocs/readthedocs.org/issues/9038
+            "Jinja2<3.1",
             "m2r2",
             "pytest",
             "pytest-cov",

@@ -21,7 +21,7 @@ def read(fname):
 # exposing the params so it can be imported
 setup_params = {
     "name": "edilkamin",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Edilkamin Stove Python client",
     "long_description": read("README.md"),
     "long_description_content_type": "text/markdown",

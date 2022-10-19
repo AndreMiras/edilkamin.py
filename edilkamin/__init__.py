@@ -24,6 +24,7 @@ def get_headers(token: str):
 
 
 def device_info(token: str, mac: str):
+    """Retrieve device info for a given MAC address in the format `aabbccddeeff`."""
     headers = get_headers(token)
     url = get_endpoint(f"device/{mac}/info")
     response = requests.get(url, headers=headers)

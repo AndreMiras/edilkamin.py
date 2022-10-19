@@ -1,3 +1,6 @@
+import os
+import sys
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -29,3 +32,6 @@ source_suffix = ['.rst', '.md']
 
 html_theme = 'alabaster'
 html_static_path = ['_static']
+
+# Make sure autodoc picks up the edilkamin package
+sys.path.insert(0, os.path.abspath('..'))

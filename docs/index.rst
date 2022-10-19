@@ -11,6 +11,7 @@ Welcome to Edilkamin's documentation!
    :caption: Contents:
 
    readme.rst
+   edilkamin.rst
    Release.md
 
 

@@ -14,6 +14,8 @@ PYTHON_VERSION=$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
 PYTHON_MAJOR_MINOR=$(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
 PYTHON_WITH_VERSION=python$(PYTHON_VERSION)
 SOURCES=edilkamin/ tests/ setup.py
+SPHINXBUILD=$(shell realpath venv/bin/sphinx-build)
+DOCS_DIR=docs
 
 
 $(VIRTUAL_ENV):
@@ -53,6 +55,14 @@ clean:
 
 clean/all: clean
 	rm -rf $(VIRTUAL_ENV)
+
+docs/clean:
+	rm -rf $(DOCS_DIR)/build/
+
+docs/build: virtualenv
+	cd $(DOCS_DIR) && make html SPHINXBUILD=$(SPHINXBUILD)
+
+docs: docs/build
 
 release/clean:
 	rm -rf dist/ build/

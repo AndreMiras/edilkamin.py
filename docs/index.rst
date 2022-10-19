@@ -10,6 +10,8 @@ Welcome to Edilkamin's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   readme.rst
+   Release.md
 
 
 Indices and tables

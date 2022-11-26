@@ -1,13 +1,17 @@
 __all__ = [
-    "sign_in",
+    "Power",
     "device_info",
+    "discover_devices",
     "mqtt_command",
     "set_power",
     "set_power_on",
     "set_power_off",
+    "sign_in",
 ]
 from edilkamin.api import (
+    Power,
     device_info,
+    discover_devices,
     mqtt_command,
     set_power,
     set_power_off,

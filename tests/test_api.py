@@ -36,6 +36,11 @@ def patch_cognito(access_token):
     return mock.patch("edilkamin.api.Cognito", m_cognito)
 
 
+def patch_get_adapters(adapters):
+    m_get_adapters = mock.Mock(return_value=adapters)
+    return mock.patch("simplepyble.Adapter.get_adapters", m_get_adapters)
+
+
 def test_sign_in():
     username = "username"
     password = "password"
@@ -46,6 +51,32 @@ def test_sign_in():
         assert api.sign_in(username, password) == access_token
     assert m_cognito().authenticate.call_args_list == [mock.call(password)]
     assert m_cognito().get_user.call_args_list == [mock.call()]
+
+
+@pytest.mark.parametrize(
+    "convert, expected_devices",
+    (
+        (True, ["a8:03:2a:fe:d5:09"]),
+        (False, ["A8:03:2A:FE:D5:0B"]),
+    ),
+)
+def test_discover_devices(convert, expected_devices):
+    adapters = [
+        mock.Mock(
+            scan_get_results=lambda: [
+                mock.Mock(
+                    identifier=lambda: "EDILKAMIN_EP",
+                    address=lambda: "A8:03:2A:FE:D5:0B",
+                ),
+                mock.Mock(
+                    identifier=lambda: "Other device",
+                    address=lambda: "00:11:22:33:44:55",
+                ),
+            ]
+        )
+    ]
+    with patch_get_adapters(adapters):
+        assert api.discover_devices(convert) == expected_devices
 
 
 def test_device_info():
@@ -120,6 +151,26 @@ def test_set_power(method, expected_value):
                 "name": "power",
                 "value": expected_value,
             },
+            headers={"Authorization": "Bearer token"},
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    "power, expected_value",
+    (
+        (True, api.Power.ON),
+        (False, api.Power.OFF),
+    ),
+)
+def test_get_power(power, expected_value):
+    json_response = {"status": {"commands": {"power": power}}}
+    with patch_requests_get(json_response) as m_get:
+        assert api.get_power(token, mac_address) == expected_value
+    assert m_get.call_args_list == [
+        mock.call(
+            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
+            "device/aabbccddeeff/info",
             headers={"Authorization": "Bearer token"},
         )
     ]

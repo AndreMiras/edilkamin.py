@@ -31,6 +31,7 @@ setup_params = {
     "install_requires": [
         "pycognito",
         "requests",
+        "simplepyble",
     ],
     "extras_require": {
         "dev": [

@@ -1,12 +1,17 @@
 #!/usr/bin/env python
-from edilkamin.api import device_info, set_power_off, sign_in
+import os
+
+from edilkamin.api import device_info, discover_devices, set_power_off, sign_in
 from edilkamin.utils import assert_env
 
 
 def main():
     username = assert_env("USERNAME")
     password = assert_env("PASSWORD")
-    mac_address = assert_env("MAC_ADDRESS")
+    mac_address = os.environ.get("MAC_ADDRESS")
+    if mac_address is None:
+        mac_addresses = discover_devices()
+        mac_address = mac_addresses[0] if mac_addresses else None
     token = sign_in(username, password)
     info = device_info(token, mac_address)
     print(info)

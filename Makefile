@@ -28,7 +28,7 @@ test: $(VIRTUAL_ENV)
 	$(TOX)
 
 pytest: $(VIRTUAL_ENV)
-	$(PYTEST) --cov edilkamin/ --cov-report term --cov-report html tests/
+	$(PYTEST) --doctest-modules --cov edilkamin/ --cov-report term --cov-report html tests/
 
 lint/isort: $(VIRTUAL_ENV)
 	$(ISORT) --check-only --diff $(SOURCES)

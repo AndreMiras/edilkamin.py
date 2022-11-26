@@ -19,9 +19,11 @@ pip install edilkamin
 ```python
 import edilkamin
 token = edilkamin.sign_in(username, password)
+mac_address = edilkamin.discover_devices()[0]
 edilkamin.device_info(token, mac_address)
 edilkamin.set_power_off(token, mac_address)
 ```
+For more advanced usage read the [documentation](https://edilkamin.readthedocs.io/en/latest/).
 
 ## Tests
 
@@ -34,9 +36,3 @@ make test
 - providing an open source web alternative
   to the [proprietary mobile app](https://play.google.com/store/apps/details?id=com.edilkamin.stufe)
 - improving the interoperability (Nest, HomeAssistant...)
-
-## Limitations
-
-It seems like there's no endpoint to list stoves associated to a user.
-The way the official app seem to work is by probing the stove via bluetooth.
-Then cache the stove MAC address to a local database for later use.

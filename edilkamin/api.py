@@ -1,10 +1,17 @@
 import typing
+from enum import Enum
 
 import requests
+import simplepyble
 from pycognito import Cognito
 
 from edilkamin import constants
 from edilkamin.utils import get_endpoint, get_headers
+
+
+class Power(Enum):
+    OFF = 0
+    ON = 1
 
 
 def sign_in(username: str, password: str) -> str:
@@ -15,9 +22,47 @@ def sign_in(username: str, password: str) -> str:
     return user._metadata["access_token"]
 
 
+def format_mac(mac: str):
+    return mac.replace(":", "").lower()
+
+
+def bluetooth_mac_to_wifi_mac(mac: str) -> str:
+    """
+    >>> bluetooth_mac_to_wifi_mac("A8:03:2A:FE:D5:0B")
+    'a8:03:2a:fe:d5:09'
+    """
+    mac = format_mac(mac)
+    mac_int = int(mac, 16)
+    mac_wifi_int = mac_int - 2
+    mac_wifi = "{:012x}".format(mac_wifi_int)
+    return ":".join(mac_wifi[i : i + 2] for i in range(0, len(mac_wifi), 2))
+
+
+def discover_devices(convert=True) -> typing.List[str]:
+    """
+    Discover devices using bluetooth.
+    Return the MAC addresses of the discovered devices.
+    Return the addresses converted to device wifi/identifier instead of the BLE ones.
+    """
+    devices = []
+    adapters = simplepyble.Adapter.get_adapters()
+    for adapter in adapters:
+        adapter.scan_for(2000)
+        for device in adapter.scan_get_results():
+            if device.identifier() == "EDILKAMIN_EP":
+                mac = (
+                    bluetooth_mac_to_wifi_mac(device.address())
+                    if convert
+                    else device.address()
+                )
+                devices.append(mac)
+    return devices
+
+
 def device_info(token: str, mac: str) -> typing.Dict:
     """Retrieve device info for a given MAC address in the format `aabbccddeeff`."""
     headers = get_headers(token)
+    mac = format_mac(mac)
     url = get_endpoint(f"device/{mac}/info")
     response = requests.get(url, headers=headers)
     response.raise_for_status()
@@ -31,23 +76,31 @@ def mqtt_command(token: str, mac_address: str, payload: typing.Dict) -> str:
     """
     headers = get_headers(token)
     url = get_endpoint("mqtt/command")
-    data = {"mac_address": mac_address, **payload}
+    data = {"mac_address": format_mac(mac_address), **payload}
     response = requests.put(url, json=data, headers=headers)
     response.raise_for_status()
     return response.json()
 
 
-def set_power(token: str, mac_address: str, value: int) -> str:
+def set_power(token: str, mac_address: str, power: Power) -> str:
     """
-    Set device power on (1) or off (0).
+    Set device power.
     Return response string e.g. "Command 0123456789abcdef executed successfully".
     """
-    return mqtt_command(token, mac_address, {"name": "power", "value": value})
+    return mqtt_command(token, mac_address, {"name": "power", "value": power.value})
+
+
+def get_power(token: str, mac_address: str) -> Power:
+    """
+    Get device current power value.
+    """
+    info = device_info(token, mac_address)
+    return Power(info["status"]["commands"]["power"])
 
 
 def set_power_on(token: str, mac_address: str) -> str:
-    return set_power(token, mac_address, 1)
+    return set_power(token, mac_address, Power.ON)
 
 
 def set_power_off(token: str, mac_address: str) -> str:
-    return set_power(token, mac_address, 0)
+    return set_power(token, mac_address, Power.OFF)

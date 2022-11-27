@@ -109,6 +109,17 @@ def set_power_off(token: str, mac_address: str) -> str:
     return set_power(token, mac_address, Power.OFF)
 
 
+def device_info_get_environment_temperature(info: typing.Dict) -> int:
+    """Get environment temperature value from cached info."""
+    return info["status"]["temperatures"]["enviroment"]
+
+
+def get_environment_temperature(token: str, mac_address: str) -> Power:
+    """Get environment temperature coming from sensor."""
+    info = device_info(token, mac_address)
+    return device_info_get_environment_temperature(info)
+
+
 def device_info_get_target_temperature(info: typing.Dict) -> int:
     """Get target temperature value from cached info."""
     return info["nvm"]["user_parameters"]["enviroment_1_temperature"]

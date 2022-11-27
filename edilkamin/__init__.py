@@ -1,9 +1,11 @@
 __all__ = [
     "Power",
     "device_info",
+    "device_info_get_environment_temperature",
     "device_info_get_power",
     "device_info_get_target_temperature",
     "discover_devices",
+    "get_environment_temperature",
     "get_power",
     "get_target_temperature",
     "mqtt_command",
@@ -16,9 +18,11 @@ __all__ = [
 from edilkamin.api import (
     Power,
     device_info,
+    device_info_get_environment_temperature,
     device_info_get_power,
     device_info_get_target_temperature,
     discover_devices,
+    get_environment_temperature,
     get_power,
     get_target_temperature,
     mqtt_command,

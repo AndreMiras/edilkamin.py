@@ -176,6 +176,14 @@ def test_get_power(power, expected_value):
     ]
 
 
+def test_get_environment_temperature():
+    temperature = 16.7
+    json_response = {"status": {"temperatures": {"enviroment": temperature}}}
+    with patch_requests_get(json_response) as m_get:
+        assert api.get_environment_temperature(token, mac_address) == temperature
+    assert m_get.call_count == 1
+
+
 def test_get_target_temperature():
     temperature = 17.8
     json_response = {

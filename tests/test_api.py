@@ -176,21 +176,23 @@ def test_get_power(power, expected_value):
     ]
 
 
-def test_get_temperature():
+def test_get_target_temperature():
     temperature = 17.8
     json_response = {
         "nvm": {"user_parameters": {"enviroment_1_temperature": temperature}}
     }
     with patch_requests_get(json_response) as m_get:
-        assert api.get_temperature(token, mac_address) == temperature
+        assert api.get_target_temperature(token, mac_address) == temperature
     assert m_get.call_count == 1
 
 
-def test_set_temperature():
+def test_set_target_temperature():
     temperature = 18.9
     json_response = "'Command 0006052500b558ab executed successfully'"
     with patch_requests_put(json_response) as m_put:
-        assert api.set_temperature(token, mac_address, temperature) == json_response
+        assert (
+            api.set_target_temperature(token, mac_address, temperature) == json_response
+        )
     assert m_put.call_args_list == [
         mock.call(
             "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"

@@ -90,12 +90,15 @@ def set_power(token: str, mac_address: str, power: Power) -> str:
     return mqtt_command(token, mac_address, {"name": "power", "value": power.value})
 
 
-def get_power(token: str, mac_address: str) -> Power:
-    """
-    Get device current power value.
-    """
-    info = device_info(token, mac_address)
+def device_info_get_power(info: typing.Dict) -> Power:
+    """Get device current power value from cached info."""
     return Power(info["status"]["commands"]["power"])
+
+
+def get_power(token: str, mac_address: str) -> Power:
+    """Get device current power value."""
+    info = device_info(token, mac_address)
+    return device_info_get_power(info)
 
 
 def set_power_on(token: str, mac_address: str) -> str:

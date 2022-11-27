@@ -107,3 +107,24 @@ def set_power_on(token: str, mac_address: str) -> str:
 
 def set_power_off(token: str, mac_address: str) -> str:
     return set_power(token, mac_address, Power.OFF)
+
+
+def device_info_get_temperature(info: typing.Dict) -> int:
+    """Get user defined temperature value from cached info."""
+    return info["nvm"]["user_parameters"]["enviroment_1_temperature"]
+
+
+def get_temperature(token: str, mac_address: str) -> Power:
+    """Get user defined temperature value."""
+    info = device_info(token, mac_address)
+    return device_info_get_temperature(info)
+
+
+def set_temperature(token: str, mac_address: str, temperature: int) -> str:
+    """
+    Set temperature in degree.
+    Return response string e.g. "Command 0006052500b558ab executed successfully".
+    """
+    return mqtt_command(
+        token, mac_address, {"name": "enviroment_1_temperature", "value": temperature}
+    )

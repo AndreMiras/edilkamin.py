@@ -12,6 +12,7 @@ def main():
     if mac_address is None:
         mac_addresses = discover_devices()
         mac_address = mac_addresses[0] if mac_addresses else None
+    assert mac_address
     token = sign_in(username, password)
     info = device_info(token, mac_address)
     print(info)

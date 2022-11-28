@@ -109,6 +109,35 @@ def set_power_off(token: str, mac_address: str) -> str:
     return set_power(token, mac_address, Power.OFF)
 
 
+def device_info_get_alarm_reset(info: typing.Dict) -> bool:
+    """Get alarm reset value from cached info."""
+    return info["status"]["commands"]["alarm_reset"]
+
+
+def get_alarm_reset(token: str, mac_address: str) -> bool:
+    """Get alarm reset value."""
+    info = device_info(token, mac_address)
+    return device_info_get_alarm_reset(info)
+
+
+def device_info_get_perform_cochlea_loading(info: typing.Dict) -> bool:
+    """Get perform cochlea loading state from cached info."""
+    return info["status"]["commands"]["perform_cochlea_loading"]
+
+
+def get_perform_cochlea_loading(token: str, mac_address: str) -> bool:
+    """Get perform cochlea loading state."""
+    info = device_info(token, mac_address)
+    return device_info_get_perform_cochlea_loading(info)
+
+
+def set_perform_cochlea_loading(token: str, mac_address: str, value: bool) -> str:
+    """Set the perform cochlea loading value."""
+    return mqtt_command(
+        token, mac_address, {"name": "cochlea_loading", "value": bool(value)}
+    )
+
+
 def device_info_get_environment_temperature(info: typing.Dict) -> int:
     """Get environment temperature value from cached info."""
     return info["status"]["temperatures"]["enviroment"]

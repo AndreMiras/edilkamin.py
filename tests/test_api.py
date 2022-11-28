@@ -213,3 +213,46 @@ def test_set_target_temperature():
             headers={"Authorization": "Bearer token"},
         )
     ]
+
+
+def test_get_alarm_reset():
+    alarm_reset = False
+    json_response = {"status": {"commands": {"alarm_reset": alarm_reset}}}
+    with patch_requests_get(json_response) as m_get:
+        assert api.get_alarm_reset(token, mac_address) == alarm_reset
+    assert m_get.call_count == 1
+
+
+def test_get_perform_cochlea_loading():
+    perform_cochlea_loading = True
+    json_response = {
+        "status": {"commands": {"perform_cochlea_loading": perform_cochlea_loading}}
+    }
+    with patch_requests_get(json_response) as m_get:
+        assert (
+            api.get_perform_cochlea_loading(token, mac_address)
+            == perform_cochlea_loading
+        )
+    assert m_get.call_count == 1
+
+
+def test_set_perform_cochlea_loading():
+    cochlea_loading = True
+    json_response = "'Command 0006031c00104855 executed successfully'"
+    with patch_requests_put(json_response) as m_put:
+        assert (
+            api.set_perform_cochlea_loading(token, mac_address, cochlea_loading)
+            == json_response
+        )
+    assert m_put.call_args_list == [
+        mock.call(
+            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
+            "mqtt/command",
+            json={
+                "mac_address": "aabbccddeeff",
+                "name": "cochlea_loading",
+                "value": cochlea_loading,
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+    ]

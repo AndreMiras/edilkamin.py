@@ -56,8 +56,8 @@ def test_sign_in():
 @pytest.mark.parametrize(
     "convert, expected_devices",
     (
-        (True, ["a8:03:2a:fe:d5:09"]),
-        (False, ["A8:03:2A:FE:D5:0B"]),
+        (True, ("a8:03:2a:fe:d5:09",)),
+        (False, ("A8:03:2A:FE:D5:0B",)),
     ),
 )
 def test_discover_devices(convert, expected_devices):

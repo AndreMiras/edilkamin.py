@@ -38,25 +38,48 @@ def bluetooth_mac_to_wifi_mac(mac: str) -> str:
     return ":".join(mac_wifi[i : i + 2] for i in range(0, len(mac_wifi), 2))
 
 
-def discover_devices(convert=True) -> typing.List[str]:
+def discover_devices_helper(
+    devices: typing.Tuple[typing.Dict], convert=True
+) -> typing.Tuple[str]:
+    """
+    Given a list of bluetooth addresses/names return the ones matching for Edilkamin.
+    >>> devices = (
+    ...     {"name": "EDILKAMIN_EP", "address": "01:23:45:67:89:AB"},
+    ...     {"name": "another_device", "address": "AA:BB:CC:DD:EE:FF"},
+    ... )
+    >>> discover_devices_helper(devices)
+    ('01:23:45:67:89:a9',)
+    """
+    matching_devices = filter(lambda device: device["name"] == "EDILKAMIN_EP", devices)
+    matching_devices = map(
+        lambda device: bluetooth_mac_to_wifi_mac(device["address"])
+        if convert
+        else device["address"],
+        matching_devices,
+    )
+    return tuple(matching_devices)
+
+
+def discover_devices(convert=True) -> typing.Tuple[str]:
     """
     Discover devices using bluetooth.
     Return the MAC addresses of the discovered devices.
     Return the addresses converted to device wifi/identifier instead of the BLE ones.
     """
-    devices = []
+    devices = ()
     adapters = simplepyble.Adapter.get_adapters()
     for adapter in adapters:
         adapter.scan_for(2000)
-        for device in adapter.scan_get_results():
-            if device.identifier() == "EDILKAMIN_EP":
-                mac = (
-                    bluetooth_mac_to_wifi_mac(device.address())
-                    if convert
-                    else device.address()
-                )
-                devices.append(mac)
-    return devices
+        devices += tuple(
+            map(
+                lambda device: {
+                    "name": device.identifier(),
+                    "address": device.address(),
+                },
+                adapter.scan_get_results(),
+            )
+        )
+    return discover_devices_helper(devices, convert)
 
 
 def device_info(token: str, mac: str) -> typing.Dict:

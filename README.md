@@ -11,7 +11,7 @@ The Mind offers an app/API to remote control the Edilkamin pellet stoves.
 ## Install
 
 ```sh
-pip install edilkamin
+pip install edilkamin[ble]
 ```
 
 ## Usage

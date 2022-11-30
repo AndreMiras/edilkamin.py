@@ -2,7 +2,6 @@ import typing
 from enum import Enum
 
 import requests
-import simplepyble
 from pycognito import Cognito
 
 from edilkamin import constants
@@ -66,6 +65,8 @@ def discover_devices(convert=True) -> typing.Tuple[str]:
     Return the MAC addresses of the discovered devices.
     Return the addresses converted to device wifi/identifier instead of the BLE ones.
     """
+    import simplepyble
+
     devices = ()
     adapters = simplepyble.Adapter.get_adapters()
     for adapter in adapters:

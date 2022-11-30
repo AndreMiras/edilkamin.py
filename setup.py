@@ -31,9 +31,9 @@ setup_params = {
     "install_requires": [
         "pycognito",
         "requests",
-        "simplepyble",
     ],
     "extras_require": {
+        "ble": ["simplepyble"],
         "dev": [
             "black",
             "coveralls",
@@ -50,7 +50,7 @@ setup_params = {
             "tox",
             "twine",
             "wheel",
-        ]
+        ],
     },
 }
 

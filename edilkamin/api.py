@@ -106,6 +106,15 @@ def mqtt_command(token: str, mac_address: str, payload: typing.Dict) -> str:
     return response.json()
 
 
+def check_connection(token: str, mac_address: str) -> str:
+    """
+    Check if the token is still valid.
+    Return a "Command 00030529000154df executed successfully" on success.
+    Raise an `HTTPError` exception otherwise.
+    """
+    return mqtt_command(token, mac_address, {"name": "check"})
+
+
 def set_power(token: str, mac_address: str, power: Power) -> str:
     """
     Set device power.

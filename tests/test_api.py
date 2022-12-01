@@ -130,6 +130,23 @@ def test_mqtt_command_error():
     assert m_put.call_count == 1
 
 
+def test_check_connection():
+    json_response = '"Command 00030529000154df executed successfully"'
+    with patch_requests_put(json_response) as m_put:
+        assert api.check_connection(token, mac_address) == json_response
+    assert m_put.call_args_list == [
+        mock.call(
+            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
+            "mqtt/command",
+            json={
+                "mac_address": "aabbccddeeff",
+                "name": "check",
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+    ]
+
+
 @pytest.mark.parametrize(
     "method, expected_value",
     (

@@ -1,5 +1,6 @@
 __all__ = [
     "Power",
+    "check_connection",
     "device_info",
     "device_info_get_alarm_reset",
     "device_info_get_environment_temperature",
@@ -21,6 +22,7 @@ __all__ = [
 ]
 from edilkamin.api import (
     Power,
+    check_connection,
     device_info,
     device_info_get_alarm_reset,
     device_info_get_environment_temperature,

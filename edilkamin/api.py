@@ -256,7 +256,7 @@ def device_info_get_fan_3_speed(info: typing.Dict) -> int:
     return info["status"]["fans"]["fan_3_speed"]
 
 
-def get_fan_1_speed(token: str, mac_address: str) -> int:
+def get_fan_3_speed(token: str, mac_address: str) -> int:
     """Get fans speed value value."""
     info = device_info(token, mac_address)
     return device_info_get_fan_3_speed(info)

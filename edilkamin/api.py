@@ -201,3 +201,35 @@ def set_target_temperature(token: str, mac_address: str, temperature: int) -> st
     return mqtt_command(
         token, mac_address, {"name": "enviroment_1_temperature", "value": temperature}
     )
+
+
+def set_fan_1_speed(token: str, mac_address: str, fan_1_speed: int) -> str:
+    """
+    Set fan 1 speed.
+    Return response string e.g. "Command 0123456789abcdef executed successfully".
+    """
+    return mqtt_command(token, mac_address, {"name": "fan_1_speed", "value": fan_1_speed})
+
+
+def set_fan_2_speed(token: str, mac_address: str, fan_2_speed: int) -> str:
+    """
+    Set fan 2 speed.
+    Return response string e.g. "Command 0123456789abcdef executed successfully".
+    """
+    return mqtt_command(token, mac_address, {"name": "fan_2_speed", "value": fan_2_speed})
+
+
+def set_fan_3_speed(token: str, mac_address: str, fan_3_speed: int) -> str:
+    """
+    Set fan 3 speed.
+    Return response string e.g. "Command 0123456789abcdef executed successfully".
+    """
+    return mqtt_command(token, mac_address, {"name": "fan_3_speed", "value": fan_3_speed})
+
+
+def set_relax_mode(token: str, mac_address: str, relax_mode: int) -> str:
+    """
+    Set relax mode.
+    Return response string e.g. "Command 0123456789abcdef executed successfully".
+    """
+    return mqtt_command(token, mac_address, {"name": "relax_mode", "value": relax_mode})

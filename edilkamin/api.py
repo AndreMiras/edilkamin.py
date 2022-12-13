@@ -212,7 +212,7 @@ def device_info_get_fan_1_speed(info: typing.Dict) -> int:
 
 
 def get_fan_1_speed(token: str, mac_address: str) -> int:
-    """Get fans speed value value."""
+    """Get fans speed value."""
     info = device_info(token, mac_address)
     return device_info_get_fan_1_speed(info)
 
@@ -235,7 +235,7 @@ def device_info_get_fan_2_speed(info: typing.Dict) -> int:
 
 
 def get_fan_2_speed(token: str, mac_address: str) -> int:
-    """Get fans speed value value."""
+    """Get fans speed value."""
     info = device_info(token, mac_address)
     return device_info_get_fan_2_speed(info)
 
@@ -257,7 +257,7 @@ def device_info_get_fan_3_speed(info: typing.Dict) -> int:
 
 
 def get_fan_3_speed(token: str, mac_address: str) -> int:
-    """Get fans speed value value."""
+    """Get fans speed value."""
     info = device_info(token, mac_address)
     return device_info_get_fan_3_speed(info)
 
@@ -270,3 +270,49 @@ def set_fan_3_speed(token: str, mac_address: str, fan_3_speed: int) -> str:
     return mqtt_command(token, mac_address, {"name": "fan_3_speed", "value": fan_3_speed})
 
 
+
+
+
+
+
+def device_info_get_airkare(info: typing.Dict) -> int:
+    """Get airkare status from cached info."""
+    return info["status"]["commands"]["airkare_function"]
+
+
+def get_airkare(token: str, mac_address: str) -> int:
+    """Get airkare status."""
+    info = device_info(token, mac_address)
+    return device_info_get_airkare(info)
+
+
+def set_airkare(token: str, mac_address: str, airkare: bool) -> str:
+    """
+    Set airkare.
+    Return response string e.g. "Command 0123456789abcdef executed successfully".
+    """
+    return mqtt_command(token, mac_address, {"name": "airkare_function", "value": airkare})
+
+
+
+
+
+
+
+def device_info_get_relax_mode(info: typing.Dict) -> int:
+    """Get relax mode status from cached info."""
+    return info["nvm"]["user_parameters"]["is_relax_active"]
+
+
+def get_relax_mode(token: str, mac_address: str) -> int:
+    """Get relax mode status."""
+    info = device_info(token, mac_address)
+    return device_info_get_relax_mode(info)
+
+
+def set_relax_mode(token: str, mac_address: str, relax_mode: bool) -> str:
+    """
+    Set relax mode.
+    Return response string e.g. "Command 0123456789abcdef executed successfully".
+    """
+    return mqtt_command(token, mac_address, {"name": "is_relax_active", "value": relax_mode})

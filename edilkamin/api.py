@@ -315,4 +315,4 @@ def set_relax_mode(token: str, mac_address: str, relax_mode: bool) -> str:
     Set relax mode.
     Return response string e.g. "Command 0123456789abcdef executed successfully".
     """
-    return mqtt_command(token, mac_address, {"name": "is_relax_active", "value": relax_mode})
+    return mqtt_command(token, mac_address, {"name": "relax_mode", "value": relax_mode})

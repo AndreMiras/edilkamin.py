@@ -203,9 +203,6 @@ def set_target_temperature(token: str, mac_address: str, temperature: int) -> st
     )
 
 
-
-
-
 def device_info_get_fan_1_speed(info: typing.Dict) -> int:
     """Get fans speed value from cached info."""
     return info["status"]["fans"]["fan_1_speed"]
@@ -223,10 +220,6 @@ def set_fan_1_speed(token: str, mac_address: str, fan_1_speed: int) -> str:
     Return response string e.g. "Command 0123456789abcdef executed successfully".
     """
     return mqtt_command(token, mac_address, {"name": "fan_1_speed", "value": fan_1_speed})
-
-
-
-
 
 
 def device_info_get_fan_2_speed(info: typing.Dict) -> int:
@@ -248,9 +241,6 @@ def set_fan_2_speed(token: str, mac_address: str, fan_2_speed: int) -> str:
     return mqtt_command(token, mac_address, {"name": "fan_2_speed", "value": fan_2_speed})
 
 
-
-
-
 def device_info_get_fan_3_speed(info: typing.Dict) -> int:
     """Get fans speed value from cached info."""
     return info["status"]["fans"]["fan_3_speed"]
@@ -268,11 +258,6 @@ def set_fan_3_speed(token: str, mac_address: str, fan_3_speed: int) -> str:
     Return response string e.g. "Command 0123456789abcdef executed successfully".
     """
     return mqtt_command(token, mac_address, {"name": "fan_3_speed", "value": fan_3_speed})
-
-
-
-
-
 
 
 def device_info_get_airkare(info: typing.Dict) -> int:
@@ -294,11 +279,6 @@ def set_airkare(token: str, mac_address: str, airkare: bool) -> str:
     return mqtt_command(token, mac_address, {"name": "airkare_function", "value": airkare})
 
 
-
-
-
-
-
 def device_info_get_relax_mode(info: typing.Dict) -> int:
     """Get relax mode status from cached info."""
     return info["nvm"]["user_parameters"]["is_relax_active"]
@@ -316,3 +296,23 @@ def set_relax_mode(token: str, mac_address: str, relax_mode: bool) -> str:
     Return response string e.g. "Command 0123456789abcdef executed successfully".
     """
     return mqtt_command(token, mac_address, {"name": "relax_mode", "value": relax_mode})
+
+
+def device_info_get_manual_power_level(info: typing.Dict) -> int:
+    """Get manual power level value from cached info."""
+    return info["nvm"]["user_parameters"]["is_relax_active"]
+
+
+def get_manual_power_level(token: str, mac_address: str) -> int:
+    """Get manual power level value."""
+    info = device_info(token, mac_address)
+    return device_info_get_relax_mode(info)
+
+
+def set_manual_power_level(token: str, mac_address: str, manual_power_level: int) -> str:
+    """
+    Set manual power level value.
+    Return response string e.g. "Command 0123456789abcdef executed successfully".
+    """
+    return mqtt_command(token, mac_address, {"name": "power_level", "value": manual_power_level}) 
+      

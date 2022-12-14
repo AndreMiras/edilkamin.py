@@ -12,6 +12,7 @@ __all__ = [
     "device_info_get_fan_3_speed",
     "device_info_get_airkare",
     "device_info_get_relax_mode",
+    "device_info_get_manual_power_level",
     "discover_devices",
     "discover_devices_helper",
     "get_perform_cochlea_loading",
@@ -23,6 +24,7 @@ __all__ = [
     "get_fan_3_speed",
     "get_airkare",
     "get_relax_mode",
+    "get_manual_power_level",
     "mqtt_command",
     "set_power",
     "set_power_off",
@@ -33,6 +35,7 @@ __all__ = [
     "set_fan_3_speed",
     "set_airkare",
     "set_relax_mode",
+    "set_manual_power_level",
     "sign_in",
 ]
 from edilkamin.api import (
@@ -49,6 +52,7 @@ from edilkamin.api import (
     device_info_get_fan_3_speed,
     device_info_get_airkare,
     device_info_get_relax_mode,
+    device_info_get_manual_power_level,
     discover_devices,
     discover_devices_helper,
     get_environment_temperature,
@@ -60,6 +64,7 @@ from edilkamin.api import (
     get_fan_3_speed,
     get_airkare,
     get_relax_mode,
+    get_manual_power_level,
     mqtt_command,
     set_power,
     set_power_off,
@@ -70,5 +75,6 @@ from edilkamin.api import (
     set_fan_3_speed,
     set_airkare,
     set_relax_mode,
+    set_manual_power_level,
     sign_in,
 )

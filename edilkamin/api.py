@@ -325,7 +325,7 @@ def set_manual_power_level(token: str, mac_address: str, manual_power_level: int
     return mqtt_command(token, mac_address, {"name": "power_level", "value": manual_power_level}) 
 
 
-def device_info_get_standby_mode(info: typing.Dict) -> int:
+def device_info_get_standby_mode(info: typing.Dict) -> bool:
     """Get standby mode status from cached info."""
     return info["nvm"]["user_parameters"]["is_standby_active"]
 

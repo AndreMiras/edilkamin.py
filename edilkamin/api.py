@@ -340,7 +340,7 @@ def set_standby_mode(token: str, mac_address: str, standby_mode: bool) -> str:
     info = device_info(token, mac_address)
     is_auto = info["nvm"]["user_parameters"]["is_auto"]
     
-    if is_auto == True:
+    if is_auto:
         """
         Set standby mode.
         Return response string e.g. "Command 0123456789abcdef executed successfully".

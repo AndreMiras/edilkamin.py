@@ -234,14 +234,14 @@ def get_fan_2_speed(token: str, mac_address: str) -> int:
 
 
 def set_fan_2_speed(token: str, mac_address: str, fan_2_speed: int) -> str:
+    """
+    Set fan 2 speed.
+    Return response string e.g. "Command 0123456789abcdef executed successfully".
+    """
     info = device_info(token, mac_address)
     fan_number_confiuguration = info["nvm"]["installer_parameters"]["fans_number"]
     
     if fan_number_confiuguration >= 2:
-        """
-        Set fan 2 speed.
-        Return response string e.g. "Command 0123456789abcdef executed successfully".
-        """
         return mqtt_command(token, mac_address, {"name": "fan_2_speed", "value": fan_2_speed})
 
 
@@ -257,23 +257,23 @@ def get_fan_3_speed(token: str, mac_address: str) -> int:
 
 
 def set_fan_3_speed(token: str, mac_address: str, fan_3_speed: int) -> str:
+    """
+    Set fan 3 speed.
+    Return response string e.g. "Command 0123456789abcdef executed successfully".
+    """
     info = device_info(token, mac_address)
     fan_number_confiuguration = info["nvm"]["installer_parameters"]["fans_number"]
     
     if fan_number_confiuguration >= 3:
-        """
-        Set fan 3 speed.
-        Return response string e.g. "Command 0123456789abcdef executed successfully".
-        """
         return mqtt_command(token, mac_address, {"name": "fan_3_speed", "value": fan_3_speed})
 
 
-def device_info_get_airkare(info: typing.Dict) -> int:
+def device_info_get_airkare(info: typing.Dict) -> bool:
     """Get airkare status from cached info."""
     return info["status"]["commands"]["airkare_function"]
 
 
-def get_airkare(token: str, mac_address: str) -> int:
+def get_airkare(token: str, mac_address: str) -> bool:
     """Get airkare status."""
     info = device_info(token, mac_address)
     return device_info_get_airkare(info)
@@ -287,12 +287,12 @@ def set_airkare(token: str, mac_address: str, airkare: bool) -> str:
     return mqtt_command(token, mac_address, {"name": "airkare_function", "value": airkare})
 
 
-def device_info_get_relax_mode(info: typing.Dict) -> int:
+def device_info_get_relax_mode(info: typing.Dict) -> bool:
     """Get relax mode status from cached info."""
     return info["nvm"]["user_parameters"]["is_relax_active"]
 
 
-def get_relax_mode(token: str, mac_address: str) -> int:
+def get_relax_mode(token: str, mac_address: str) -> bool:
     """Get relax mode status."""
     info = device_info(token, mac_address)
     return device_info_get_relax_mode(info)
@@ -330,19 +330,19 @@ def device_info_get_standby_mode(info: typing.Dict) -> bool:
     return info["nvm"]["user_parameters"]["is_standby_active"]
 
 
-def get_standby_mode(token: str, mac_address: str) -> int:
+def get_standby_mode(token: str, mac_address: str) -> bool:
     """Get standby mode status."""
     info = device_info(token, mac_address)
     return device_info_get_standby_mode(info)
 
 
 def set_standby_mode(token: str, mac_address: str, standby_mode: bool) -> str:
+    """
+    Set standby mode.
+    Return response string e.g. "Command 0123456789abcdef executed successfully".
+    """
     info = device_info(token, mac_address)
     is_auto = info["nvm"]["user_parameters"]["is_auto"]
     
     if is_auto:
-        """
-        Set standby mode.
-        Return response string e.g. "Command 0123456789abcdef executed successfully".
-        """
         return mqtt_command(token, mac_address, {"name": "standby_mode", "value": standby_mode})

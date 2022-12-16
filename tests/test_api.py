@@ -41,6 +41,10 @@ def patch_get_adapters(adapters):
     return mock.patch("simplepyble.Adapter.get_adapters", m_get_adapters)
 
 
+def patch_warn():
+    return mock.patch("edilkamin.api.warnings.warn")
+
+
 def test_sign_in():
     username = "username"
     password = "password"
@@ -273,3 +277,190 @@ def test_set_perform_cochlea_loading():
             headers={"Authorization": "Bearer token"},
         )
     ]
+
+
+@pytest.mark.parametrize(
+    "fans_number, warning, expected_speed",
+    (
+        (2, [], 3),
+        (1, [mock.call("Only 1 fan(s) available.")], 0),
+    ),
+)
+def test_get_fan_speed(fans_number, warning, expected_speed):
+    fan_id = 2
+    speed = 3
+    json_response = {
+        "status": {"fans": {f"fan_{fan_id}_speed": speed}},
+        "nvm": {"installer_parameters": {"fans_number": fans_number}},
+    }
+    with patch_requests_get(json_response) as m_get, patch_warn() as m_warn:
+        assert api.get_fan_speed(token, mac_address, fan_id) == expected_speed
+    assert m_get.call_count == 1
+    assert m_warn.call_args_list == warning
+
+
+@pytest.mark.parametrize(
+    "fans_number, warning, expected_return",
+    (
+        (2, [], "'Command executed successfully'"),
+        (1, [mock.call("Only 1 fan(s) available.")], ""),
+    ),
+)
+def test_set_fan_speed(fans_number, warning, expected_return):
+    fan_id = 2
+    speed = 3
+    get_json_response = {"nvm": {"installer_parameters": {"fans_number": fans_number}}}
+    put_json_response = "'Command executed successfully'"
+    with patch_requests_get(get_json_response) as m_get, patch_warn() as m_warn:
+        with patch_requests_put(put_json_response) as m_put:
+            assert (
+                api.set_fan_speed(token, mac_address, fan_id, speed) == expected_return
+            )
+    assert m_get.call_count == 1
+    assert m_warn.call_args_list == warning
+    assert (
+        m_put.call_args_list == []
+        if warning
+        else [
+            mock.call(
+                "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
+                "mqtt/command",
+                json={
+                    "mac_address": "aabbccddeeff",
+                    "name": f"fan_{fan_id}_speed",
+                    "value": speed,
+                },
+                headers={"Authorization": "Bearer token"},
+            )
+        ]
+    )
+
+
+def test_get_airkare():
+    airkare_function = False
+    json_response = {"status": {"commands": {"airkare_function": airkare_function}}}
+    with patch_requests_get(json_response) as m_get:
+        assert api.get_airkare(token, mac_address) == airkare_function
+    assert m_get.call_count == 1
+
+
+def test_set_airkare():
+    airkare = True
+    json_response = "'Command executed successfully'"
+    with patch_requests_put(json_response) as m_put:
+        assert api.set_airkare(token, mac_address, airkare) == json_response
+    assert m_put.call_args_list == [
+        mock.call(
+            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
+            "mqtt/command",
+            json={
+                "mac_address": "aabbccddeeff",
+                "name": "airkare_function",
+                "value": airkare,
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+    ]
+
+
+def test_get_relax_mode():
+    relax_mode = False
+    json_response = {"nvm": {"user_parameters": {"is_relax_active": relax_mode}}}
+    with patch_requests_get(json_response) as m_get:
+        assert api.get_relax_mode(token, mac_address) == relax_mode
+    assert m_get.call_count == 1
+
+
+def test_set_relax_mode():
+    relax_mode = True
+    json_response = "'Command executed successfully'"
+    with patch_requests_put(json_response) as m_put:
+        assert api.set_relax_mode(token, mac_address, relax_mode) == json_response
+    assert m_put.call_args_list == [
+        mock.call(
+            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
+            "mqtt/command",
+            json={
+                "mac_address": "aabbccddeeff",
+                "name": "relax_mode",
+                "value": relax_mode,
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+    ]
+
+
+def test_get_manual_power_level():
+    manual_power = 1
+    json_response = {"nvm": {"user_parameters": {"manual_power": manual_power}}}
+    with patch_requests_get(json_response) as m_get:
+        assert api.get_manual_power_level(token, mac_address) == manual_power
+    assert m_get.call_count == 1
+
+
+def test_set_manual_power_level():
+    power_level = 3
+    json_response = "'Command executed successfully'"
+    with patch_requests_put(json_response) as m_put:
+        assert (
+            api.set_manual_power_level(token, mac_address, power_level) == json_response
+        )
+    assert m_put.call_args_list == [
+        mock.call(
+            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
+            "mqtt/command",
+            json={
+                "mac_address": "aabbccddeeff",
+                "name": "power_level",
+                "value": power_level,
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+    ]
+
+
+def test_get_standby_mode():
+    is_standby_active = False
+    json_response = {
+        "nvm": {"user_parameters": {"is_standby_active": is_standby_active}}
+    }
+    with patch_requests_get(json_response) as m_get:
+        assert api.get_standby_mode(token, mac_address) == is_standby_active
+    assert m_get.call_count == 1
+
+
+@pytest.mark.parametrize(
+    "is_auto, warning, expected_return",
+    (
+        (True, [], "'Command executed successfully'"),
+        (False, [mock.call("Standby mode is only available from auto mode.")], ""),
+    ),
+)
+def test_set_standby_mode(is_auto, warning, expected_return):
+    standby_mode = True
+    get_json_response = {"nvm": {"user_parameters": {"is_auto": is_auto}}}
+    put_json_response = "'Command executed successfully'"
+    with patch_requests_get(get_json_response) as m_get, patch_warn() as m_warn:
+        with patch_requests_put(put_json_response) as m_put:
+            assert (
+                api.set_standby_mode(token, mac_address, standby_mode)
+                == expected_return
+            )
+    assert m_get.call_count == 1
+    assert m_warn.call_args_list == warning
+    assert (
+        m_put.call_args_list == []
+        if warning
+        else [
+            mock.call(
+                "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
+                "mqtt/command",
+                json={
+                    "mac_address": "aabbccddeeff",
+                    "name": "standby_mode",
+                    "value": standby_mode,
+                },
+                headers={"Authorization": "Bearer token"},
+            )
+        ]
+    )

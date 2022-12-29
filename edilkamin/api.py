@@ -239,7 +239,7 @@ def set_fan_speed(token: str, mac_address: str, fan_id: int, speed: int) -> str:
 
 def device_info_get_airkare(info: typing.Dict) -> bool:
     """Get airkare status from cached info."""
-    return info["status"]["commands"]["airkare_function"]
+    return info["status"]["flags"]["is_airkare_active"]
 
 
 def get_airkare(token: str, mac_address: str) -> bool:
@@ -260,7 +260,7 @@ def set_airkare(token: str, mac_address: str, airkare: bool) -> str:
 
 def device_info_get_relax_mode(info: typing.Dict) -> bool:
     """Get relax mode status from cached info."""
-    return info["nvm"]["user_parameters"]["is_relax_active"]
+    return info["status"]["flags"]["is_relax_active"]
 
 
 def get_relax_mode(token: str, mac_address: str) -> bool:
@@ -328,7 +328,7 @@ def set_standby_mode(token: str, mac_address: str, standby_mode: bool) -> str:
 
 def device_info_get_chrono_mode(info: typing.Dict) -> bool:
     """Get chrono mode status from cached info."""
-    return info["nvm"]["chrono"]["is_active"]
+    return info["status"]["flags"]["is_crono_active"]
 
 
 def get_chrono_mode(token: str, mac_address: str) -> bool:

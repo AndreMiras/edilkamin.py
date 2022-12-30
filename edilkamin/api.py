@@ -347,6 +347,10 @@ def set_chrono_mode(token: str, mac_address: str, chrono_mode: bool) -> str:
 
 def device_info_get_easy_timer(info: typing.Dict) -> int:
     """Get easy timer value from cached info."""
+    info = device_info(token, mac_address)
+    easy_time_status=info["status"]["flags"]["is_easytimer_active"]
+    if not easy_time_status:
+        return easy_time_status
     return info["status"]["easytimer"]["time"]
 
 

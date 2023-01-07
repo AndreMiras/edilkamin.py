@@ -342,7 +342,9 @@ def set_chrono_mode(token: str, mac_address: str, chrono_mode: bool) -> str:
     Set chrono mode.
     Return response string e.g. "Command 0123456789abcdef executed successfully".
     """
-    return mqtt_command(token, mac_address, {"name": "chrono_mode", "value": chrono_mode})
+    return mqtt_command(
+        token, mac_address, {"name": "chrono_mode", "value": chrono_mode}
+    )
 
 
 def device_info_get_easy_timer(info: typing.Dict) -> int:
@@ -353,7 +355,7 @@ def device_info_get_easy_timer(info: typing.Dict) -> int:
 def get_easy_timer(token: str, mac_address: str) -> str:
     """Get easy timer value."""
     info = device_info(token, mac_address)
-    easy_time_status=info["status"]["flags"]["is_easytimer_active"]
+    easy_time_status = info["status"]["flags"]["is_easytimer_active"]
     if not easy_time_status:
         return easy_time_status
     return device_info_get_easy_timer(info)

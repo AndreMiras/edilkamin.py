@@ -338,7 +338,7 @@ def test_set_fan_speed(fans_number, warning, expected_return):
 
 def test_get_airkare():
     airkare_function = False
-    json_response = {"status": {"commands": {"airkare_function": airkare_function}}}
+    json_response = {"status": {"flags": {"is_airkare_active": airkare_function}}}
     with patch_requests_get(json_response) as m_get:
         assert api.get_airkare(token, mac_address) == airkare_function
     assert m_get.call_count == 1
@@ -365,7 +365,7 @@ def test_set_airkare():
 
 def test_get_relax_mode():
     relax_mode = False
-    json_response = {"nvm": {"user_parameters": {"is_relax_active": relax_mode}}}
+    json_response = {"status": {"flags": {"is_relax_active": relax_mode}}}
     with patch_requests_get(json_response) as m_get:
         assert api.get_relax_mode(token, mac_address) == relax_mode
     assert m_get.call_count == 1

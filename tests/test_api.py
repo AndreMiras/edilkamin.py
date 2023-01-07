@@ -493,11 +493,19 @@ def test_set_chrono_mode():
     ]
 
 
-def test_get_easy_timer():
-    mode = False
-    json_response = {"status": {"flags": {"is_easytimer_active": mode}}}
+@pytest.mark.parametrize(
+    "mode, time, expected_return",
+    (
+        (False, 1234, 0),
+        (True, 1234, 1234),
+    ),
+)
+def test_get_easy_timer(mode, time, expected_return):
+    json_response = {
+        "status": {"flags": {"is_easytimer_active": mode}, "easytimer": {"time": time}}
+    }
     with patch_requests_get(json_response) as m_get:
-        assert api.get_easy_timer(token, mac_address) == mode
+        assert api.get_easy_timer(token, mac_address) == expected_return
     assert m_get.call_count == 1
 
 

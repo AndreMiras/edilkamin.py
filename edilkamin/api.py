@@ -239,7 +239,7 @@ def set_fan_speed(token: str, mac_address: str, fan_id: int, speed: int) -> str:
 
 def device_info_get_airkare(info: typing.Dict) -> bool:
     """Get airkare status from cached info."""
-    return info["status"]["commands"]["airkare_function"]
+    return info["status"]["flags"]["is_airkare_active"]
 
 
 def get_airkare(token: str, mac_address: str) -> bool:
@@ -260,7 +260,7 @@ def set_airkare(token: str, mac_address: str, airkare: bool) -> str:
 
 def device_info_get_relax_mode(info: typing.Dict) -> bool:
     """Get relax mode status from cached info."""
-    return info["nvm"]["user_parameters"]["is_relax_active"]
+    return info["status"]["flags"]["is_relax_active"]
 
 
 def get_relax_mode(token: str, mac_address: str) -> bool:
@@ -324,3 +324,44 @@ def set_standby_mode(token: str, mac_address: str, standby_mode: bool) -> str:
     return mqtt_command(
         token, mac_address, {"name": "standby_mode", "value": standby_mode}
     )
+
+
+def device_info_get_chrono_mode(info: typing.Dict) -> bool:
+    """Get chrono mode status from cached info."""
+    return info["status"]["flags"]["is_crono_active"]
+
+
+def get_chrono_mode(token: str, mac_address: str) -> bool:
+    """Get chrono mode status."""
+    info = device_info(token, mac_address)
+    return device_info_get_chrono_mode(info)
+
+
+def set_chrono_mode(token: str, mac_address: str, chrono_mode: bool) -> str:
+    """
+    Set chrono mode.
+    Return response string e.g. "Command 0123456789abcdef executed successfully".
+    """
+    return mqtt_command(token, mac_address, {"name": "chrono_mode", "value": chrono_mode})
+
+
+def device_info_get_easy_timer(info: typing.Dict) -> int:
+    """Get easy timer value from cached info."""
+    return info["status"]["easytimer"]["time"]
+
+
+def get_easy_timer(token: str, mac_address: str) -> str:
+    """Get easy timer value."""
+    info = device_info(token, mac_address)
+    easy_time_status=info["status"]["flags"]["is_easytimer_active"]
+    if not easy_time_status:
+        return easy_time_status
+    return device_info_get_easy_timer(info)
+
+
+def set_easy_timer(token: str, mac_address: str, easy_timer: int) -> str:
+    """
+    Set easy timer value.
+    Return response string e.g. "Command 0123456789abcdef executed successfully".
+    """
+    return mqtt_command(token, mac_address, {"name": "easytimer", "value": easy_timer})

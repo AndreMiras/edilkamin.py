@@ -464,3 +464,57 @@ def test_set_standby_mode(is_auto, warning, expected_return):
             )
         ]
     )
+
+
+def test_get_chrono_mode():
+    mode = False
+    json_response = {"status": {"flags": {"is_crono_active": mode}}}
+    with patch_requests_get(json_response) as m_get:
+        assert api.get_chrono_mode(token, mac_address) == mode
+    assert m_get.call_count == 1
+
+
+def test_set_chrono_mode():
+    mode = True
+    json_response = "'Command executed successfully'"
+    with patch_requests_put(json_response) as m_put:
+        assert api.set_chrono_mode(token, mac_address, mode) == json_response
+    assert m_put.call_args_list == [
+        mock.call(
+            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
+            "mqtt/command",
+            json={
+                "mac_address": "aabbccddeeff",
+                "name": "chrono_mode",
+                "value": mode,
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+    ]
+
+
+def test_get_easy_timer():
+    mode = False
+    json_response = {"status": {"flags": {"is_easytimer_active": mode}}}
+    with patch_requests_get(json_response) as m_get:
+        assert api.get_easy_timer(token, mac_address) == mode
+    assert m_get.call_count == 1
+
+
+def test_set_easy_timer():
+    mode = True
+    json_response = "'Command executed successfully'"
+    with patch_requests_put(json_response) as m_put:
+        assert api.set_easy_timer(token, mac_address, mode) == json_response
+    assert m_put.call_args_list == [
+        mock.call(
+            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
+            "mqtt/command",
+            json={
+                "mac_address": "aabbccddeeff",
+                "name": "easytimer",
+                "value": mode,
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+    ]

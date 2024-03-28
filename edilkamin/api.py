@@ -52,9 +52,11 @@ def discover_devices_helper(
     """
     matching_devices = filter(lambda device: device["name"] == "EDILKAMIN_EP", devices)
     matching_devices = map(
-        lambda device: bluetooth_mac_to_wifi_mac(device["address"])
-        if convert
-        else device["address"],
+        lambda device: (
+            bluetooth_mac_to_wifi_mac(device["address"])
+            if convert
+            else device["address"]
+        ),
         matching_devices,
     )
     return tuple(matching_devices)

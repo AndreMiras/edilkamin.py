@@ -526,3 +526,23 @@ def test_set_easy_timer():
             headers={"Authorization": "Bearer token"},
         )
     ]
+
+
+def test_get_autonomy_time():
+    time = 2100
+    json_response = {
+        "status": {"pellet": {"autonomy_time": time}}
+    }
+    with patch_requests_get(json_response) as m_get:
+        assert api.get_autonomy_time(token, mac_address) == time
+    assert m_get.call_count == 1
+
+
+def test_get_pellet_reserve():
+    mode = False
+    json_response = {
+        "status": {"flags": {"is_pellet_in_reserve": mode}}
+    }
+    with patch_requests_get(json_response) as m_get:
+        assert api.get_pellet_reserve(token, mac_address) == mode
+    assert m_get.call_count == 1

@@ -365,3 +365,25 @@ def set_easy_timer(token: str, mac_address: str, easy_timer: int) -> str:
     Return response string e.g. "Command 0123456789abcdef executed successfully".
     """
     return mqtt_command(token, mac_address, {"name": "easytimer", "value": easy_timer})
+
+
+def device_info_get_autonomy_time(info: typing.Dict) -> int:
+    """Get autonomy time from cached info."""
+    return info["status"]["pellet"]["autonomy_time"]
+
+
+def get_autonomy_time(token: str, mac_address: str) -> int:
+    """Get autonomy time."""
+    info = device_info(token, mac_address)
+    return device_info_get_autonomy_time(info)
+
+
+def device_info_get_pellet_reserve(info: typing.Dict) -> bool:
+    """Get pellet reserve status from cached info."""
+    return info["status"]["flags"]["is_pellet_in_reserve"]
+
+
+def get_pellet_reserve(token: str, mac_address: str) -> bool:
+    """Get pellet reserve status."""
+    info = device_info(token, mac_address)
+    return device_info_get_pellet_reserve(info)

@@ -3,7 +3,7 @@ import sys
 
 from setuptools import setup
 
-REQUIRED_PYTHON = (3, 7)
+REQUIRED_PYTHON = (3, 8)
 
 
 def assert_python_version(version_info):

@@ -1,11 +1,12 @@
 #!/usr/bin/env python
+import asyncio
 import os
 
 from edilkamin.api import device_info, discover_devices, set_power_off, sign_in
 from edilkamin.utils import assert_env
 
 
-def main():
+async def main():
     username = assert_env("USERNAME")
     password = assert_env("PASSWORD")
     mac_address = os.environ.get("MAC_ADDRESS")
@@ -14,11 +15,11 @@ def main():
         mac_address = mac_addresses[0] if mac_addresses else None
     assert mac_address
     token = sign_in(username, password)
-    info = device_info(token, mac_address)
+    info = await device_info(token, mac_address)
     print(info)
-    result = set_power_off(token, mac_address)
+    result = await set_power_off(token, mac_address)
     print(result)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

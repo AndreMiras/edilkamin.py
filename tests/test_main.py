@@ -1,7 +1,7 @@
 from unittest import mock
 
 import pytest
-from test_api import patch_cognito, patch_requests_get, patch_requests_put
+from test_api import patch_cognito, patch_httpx_get, patch_httpx_put
 
 from edilkamin import __main__
 
@@ -10,6 +10,7 @@ def patch_discover_devices():
     return mock.patch("edilkamin.__main__.discover_devices")
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "env, discover_devices_called",
     (
@@ -17,7 +18,7 @@ def patch_discover_devices():
         ({"MAC_ADDRESS": "mac_address"}, False),
     ),
 )
-def test_main(env, discover_devices_called):
+async def test_main(env, discover_devices_called):
     access_token = "token"
     env = {
         **{
@@ -27,9 +28,9 @@ def test_main(env, discover_devices_called):
         **env,
     }
     with mock.patch.dict("os.environ", env), patch_cognito(access_token) as m_cognito:
-        with patch_requests_get() as m_get, patch_requests_put() as m_put:
+        with patch_httpx_get({}) as m_get, patch_httpx_put({}) as m_put:
             with patch_discover_devices() as m_discover_devices:
-                assert __main__.main() is None
+                assert await __main__.main() is None
     assert m_cognito.called is True
     assert m_get.called is True
     assert m_put.called is True

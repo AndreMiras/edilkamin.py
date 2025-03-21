@@ -17,12 +17,18 @@ pip install edilkamin[ble]
 
 ## Usage
 
+Both async and sync are supported seamlessly, simply use the `await` keyword for the async version.
+
 ```python
 import edilkamin
 token = edilkamin.sign_in(username, password)
 mac_address = edilkamin.discover_devices()[0]
-edilkamin.device_info(token, mac_address)
+info = edilkamin.device_info(token, mac_address)
+# or async via
+# info = await edilkamin.device_info(token, mac_address)
 edilkamin.set_power_off(token, mac_address)
+# or async
+# await edilkamin.set_power_off(token, mac_address)
 ```
 For more advanced usage read the [documentation](https://edilkamin.readthedocs.io/en/latest/).
 

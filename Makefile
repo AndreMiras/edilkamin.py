@@ -1,5 +1,4 @@
 VIRTUAL_ENV ?= venv
-REQUIREMENTS:=requirements.txt
 PIP=$(VIRTUAL_ENV)/bin/pip
 PYTHON=$(VIRTUAL_ENV)/bin/python
 ISORT=$(VIRTUAL_ENV)/bin/isort
@@ -9,18 +8,19 @@ PYTEST=$(VIRTUAL_ENV)/bin/pytest
 TOX=$(VIRTUAL_ENV)/bin/tox
 TWINE=$(VIRTUAL_ENV)/bin/twine
 PYTHON_MAJOR_VERSION=3
-PYTHON_MINOR_VERSION=10
+PYTHON_MINOR_VERSION=12
 PYTHON_VERSION=$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
 PYTHON_MAJOR_MINOR=$(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
 PYTHON_WITH_VERSION=python$(PYTHON_VERSION)
-SOURCES=edilkamin/ tests/ setup.py
+SOURCES=edilkamin/ tests/
+BUILD=$(VIRTUAL_ENV)/bin/python -m build
 SPHINXBUILD=$(shell realpath venv/bin/sphinx-build)
 DOCS_DIR=docs
 
 
 $(VIRTUAL_ENV):
 	$(PYTHON_WITH_VERSION) -m venv $(VIRTUAL_ENV)
-	$(PIP) install -r $(REQUIREMENTS)
+	$(PIP) install -e .[dev,ble]
 
 virtualenv: $(VIRTUAL_ENV)
 
@@ -68,7 +68,7 @@ release/clean:
 	rm -rf dist/ build/
 
 release/build: release/clean virtualenv
-	$(PYTHON) setup.py sdist bdist_wheel
+	$(BUILD)
 	$(TWINE) check dist/*
 
 release/upload:

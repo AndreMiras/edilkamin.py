@@ -14,10 +14,10 @@ VERSION=major.minor.patch
 git checkout -b release/$VERSION
 ```
 
-Now update the [setup.py](../setup.py) `version` to match the new release version.
+Now update the [pyproject.toml](../pyproject.toml) `version` to match the new release version.
 
 ```sh
-sed --regexp-extended 's/"version": "(.+)"/"version": "'$VERSION'"/' --in-place setup.py
+sed --regexp-extended 's/version = "(.+)"/version = "'$VERSION'"/' --in-place pyproject.toml
 ```
 
 Then commit/push and create a pull request targeting the `main` branch.

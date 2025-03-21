@@ -1,2 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edilkamin"
+version = "1.4.1"
+description = "Edilkamin Stove Python client"
+readme = "README.md"
+authors = [
+    {name = "Andre Miras"}
+]
+requires-python = ">=3.9"
+dependencies = [
+    "pycognito",
+    "requests",
+]
+
+[project.urls]
+Homepage = "https://github.com/AndreMiras/edilkamin.py"
+
+[project.optional-dependencies]
+ble = ["simplepyble"]
+dev = [
+    "black",
+    "build",
+    "coveralls",
+    "flake8",
+    "isort",
+    "pytest",
+    "pytest-cov",
+    "tox",
+    "twine",
+    "wheel",
+]
+doc = [
+    "m2r2",
+    "sphinx",
+    "sphinx-rtd-theme",
+]
+
 [tool.isort]
 profile = "black"

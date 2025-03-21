@@ -100,8 +100,9 @@ def test_device_info_error():
     """Error status should be raised."""
     json_response = {}
     status_code = 401
-    with patch_requests_get(json_response, status_code) as m_get, pytest.raises(
-        HTTPError, match="401 Client Error"
+    with (
+        patch_requests_get(json_response, status_code) as m_get,
+        pytest.raises(HTTPError, match="401 Client Error"),
     ):
         api.device_info(token, mac_address)
     assert m_get.call_count == 1
@@ -127,8 +128,9 @@ def test_mqtt_command_error():
     json_response = {}
     status_code = 401
     payload = {"key": "value"}
-    with patch_requests_put(json_response, status_code) as m_put, pytest.raises(
-        HTTPError, match="401 Client Error"
+    with (
+        patch_requests_put(json_response, status_code) as m_put,
+        pytest.raises(HTTPError, match="401 Client Error"),
     ):
         api.mqtt_command(token, mac_address, payload)
     assert m_put.call_count == 1

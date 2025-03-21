@@ -3,6 +3,7 @@
 [![Tests](https://github.com/AndreMiras/edilkamin.py/workflows/Tests/badge.svg)](https://github.com/AndreMiras/edilkamin.py/actions/workflows/tests.yml)
 [![Coverage Status](https://coveralls.io/repos/github/AndreMiras/edilkamin.py/badge.svg?branch=main)](https://coveralls.io/github/AndreMiras/edilkamin.py?branch=main)
 [![PyPI version](https://badge.fury.io/py/edilkamin.svg)](https://badge.fury.io/py/edilkamin)
+[![Build Docs](https://github.com/AndreMiras/edilkamin.py/actions/workflows/docs.yml/badge.svg)](https://github.com/AndreMiras/edilkamin.py/actions/workflows/docs.yml)
 [![Documentation Status](https://readthedocs.org/projects/edilkamin/badge/?version=latest)](https://edilkamin.readthedocs.io/en/latest/?badge=latest)
 
 This is a library for the [Reverse Engineered](https://medium.com/@andre.miras/edilkamin-stove-reverse-engineering-54c8f7af6b54) "The Mind" Edilkamin API.

@@ -19,7 +19,7 @@ author = 'Andre Miras'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
-    'm2r2',
+    'myst_parser',
 ]
 
 templates_path = ['_templates']

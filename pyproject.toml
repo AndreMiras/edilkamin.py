@@ -34,7 +34,7 @@ dev = [
     "wheel",
 ]
 doc = [
-    "m2r2",
+    "myst-parser",
     "sphinx",
     "sphinx-rtd-theme",
 ]

@@ -209,7 +209,7 @@ def set_target_temperature(token: str, mac_address: str, temperature: int) -> st
 def valid_fan_id_or_warning(info: typing.Dict, fan_id):
     fans_number = info["nvm"]["installer_parameters"]["fans_number"]
     if fans_number < fan_id:
-        warnings.warn(f"Only {fans_number} fan(s) available.")
+        warnings.warn(f"Only {fans_number} fan(s) available.", stacklevel=2)
     return fans_number >= fan_id
 
 
@@ -321,7 +321,7 @@ def set_standby_mode(token: str, mac_address: str, standby_mode: bool) -> str:
     info = device_info(token, mac_address)
     is_auto = info["nvm"]["user_parameters"]["is_auto"]
     if not is_auto:
-        warnings.warn("Standby mode is only available from auto mode.")
+        warnings.warn("Standby mode is only available from auto mode.", stacklevel=2)
         return ""
     return mqtt_command(
         token, mac_address, {"name": "standby_mode", "value": standby_mode}

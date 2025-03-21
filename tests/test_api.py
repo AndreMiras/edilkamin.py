@@ -285,7 +285,7 @@ def test_set_perform_cochlea_loading():
     "fans_number, warning, expected_speed",
     (
         (2, [], 3),
-        (1, [mock.call("Only 1 fan(s) available.")], 0),
+        (1, [mock.call("Only 1 fan(s) available.", stacklevel=2)], 0),
     ),
 )
 def test_get_fan_speed(fans_number, warning, expected_speed):
@@ -305,7 +305,7 @@ def test_get_fan_speed(fans_number, warning, expected_speed):
     "fans_number, warning, expected_return",
     (
         (2, [], "'Command executed successfully'"),
-        (1, [mock.call("Only 1 fan(s) available.")], ""),
+        (1, [mock.call("Only 1 fan(s) available.", stacklevel=2)], ""),
     ),
 )
 def test_set_fan_speed(fans_number, warning, expected_return):
@@ -435,7 +435,11 @@ def test_get_standby_mode():
     "is_auto, warning, expected_return",
     (
         (True, [], "'Command executed successfully'"),
-        (False, [mock.call("Standby mode is only available from auto mode.")], ""),
+        (
+            False,
+            [mock.call("Standby mode is only available from auto mode.", stacklevel=2)],
+            "",
+        ),
     ),
 )
 def test_set_standby_mode(is_auto, warning, expected_return):

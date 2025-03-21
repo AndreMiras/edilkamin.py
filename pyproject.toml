@@ -22,13 +22,11 @@ Homepage = "https://github.com/AndreMiras/edilkamin.py"
 [project.optional-dependencies]
 ble = ["simplepyble"]
 dev = [
-    "black",
     "build",
     "coveralls",
-    "flake8",
-    "isort",
     "pytest",
     "pytest-cov",
+    "ruff",
     "tox",
     "twine",
     "wheel",
@@ -39,5 +37,8 @@ doc = [
     "sphinx-rtd-theme",
 ]
 
-[tool.isort]
-profile = "black"
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "Q"]

@@ -1,10 +1,8 @@
 VIRTUAL_ENV ?= venv
 PIP=$(VIRTUAL_ENV)/bin/pip
 PYTHON=$(VIRTUAL_ENV)/bin/python
-ISORT=$(VIRTUAL_ENV)/bin/isort
-FLAKE8=$(VIRTUAL_ENV)/bin/flake8
-BLACK=$(VIRTUAL_ENV)/bin/black
 PYTEST=$(VIRTUAL_ENV)/bin/pytest
+RUFF=$(VIRTUAL_ENV)/bin/ruff
 TOX=$(VIRTUAL_ENV)/bin/tox
 TWINE=$(VIRTUAL_ENV)/bin/twine
 PYTHON_MAJOR_VERSION=3
@@ -30,24 +28,22 @@ test: $(VIRTUAL_ENV)
 pytest: $(VIRTUAL_ENV)
 	$(PYTEST) --doctest-modules --cov edilkamin/ --cov-report term --cov-report html tests/ edilkamin/
 
-lint/isort: $(VIRTUAL_ENV)
-	$(ISORT) --check-only --diff $(SOURCES)
+lint/ruff/check: $(VIRTUAL_ENV)
+	$(RUFF) check $(SOURCES)
 
-lint/flake8: $(VIRTUAL_ENV)
-	$(FLAKE8) $(SOURCES)
+lint/ruff/format-check: $(VIRTUAL_ENV)
+	$(RUFF) format --check $(SOURCES)
 
-lint/black: $(VIRTUAL_ENV)
-	$(BLACK) --check $(SOURCES)
+format/ruff/check: $(VIRTUAL_ENV)
+	$(RUFF) check --fix $(SOURCES)
 
-format/isort: $(VIRTUAL_ENV)
-	$(ISORT) $(SOURCES)
+format/ruff:
+	$(RUFF) format $(SOURCES)
+	$(RUFF) check --fix $(SOURCES)
 
-format/black: $(VIRTUAL_ENV)
-	$(BLACK) --verbose $(SOURCES)
+lint: lint/ruff/check lint/ruff/format-check
 
-lint: lint/isort lint/flake8 lint/black
-
-format: format/isort format/black
+format: format/ruff
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -r {} +

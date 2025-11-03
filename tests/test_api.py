@@ -53,7 +53,7 @@ def test_sign_in():
         (False, ("A8:03:2A:FE:D5:0B",)),
     ),
 )
-def test_discover_devices(convert, expected_devices, respx_mock: Router):
+def test_discover_devices(convert, expected_devices):
     adapters = [
         mock.Mock(
             scan_get_results=lambda: [

@@ -1,34 +1,26 @@
 from unittest import mock
 
 import pytest
-from httpx import HTTPStatusError, Request, Response
+from httpx import HTTPStatusError, Response
+from respx import Router
 
 from edilkamin import api
 
+DEVICE_INFO_URL = "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+
+MQTT_COMMAND_URL = (
+    "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+)
+
 token = "token"
 mac_address = "aabbccddeeff"
-
-
-def patch_httpx(method, json_response=None, status_code=200):
-    request = Request(method.upper(), "https://example.com")
-    mock_response = Response(status_code, json=json_response, request=request)
-    return mock.patch(
-        f"edilkamin.api.httpx.AsyncClient.{method}", return_value=mock_response
-    )
-
-
-def patch_httpx_get(json_response=None, status_code=200):
-    return patch_httpx("get", json_response, status_code)
-
-
-def patch_httpx_put(json_response=None, status_code=200):
-    return patch_httpx("put", json_response, status_code)
 
 
 def patch_cognito(access_token):
     m_get_user = mock.Mock()
     m_get_user._metadata = {"access_token": access_token}
     m_cognito = mock.Mock()
+    m_cognito.access_token = access_token
     m_cognito.return_value.get_user.return_value = m_get_user
     return mock.patch("edilkamin.api.Cognito", m_cognito)
 
@@ -80,74 +72,59 @@ def test_discover_devices(convert, expected_devices):
         assert api.discover_devices(convert) == expected_devices
 
 
-def test_device_info():
+def test_device_info(respx_mock: Router):
     json_response = {}
-    with patch_httpx_get(json_response) as m_get:
-        assert api.device_info(token, mac_address) == json_response
-    assert m_get.call_args_list == [
-        mock.call(
-            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
-            "device/aabbccddeeff/info",
-            headers={"Authorization": "Bearer token"},
-        )
-    ]
+
+    respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+
+    assert api.device_info(token, mac_address) == json_response
 
 
-def test_device_info_error():
+def test_device_info_error(respx_mock: Router):
     """Error status should be raised."""
-    json_response = {}
-    status_code = 401
-    with (
-        patch_httpx_get(json_response, status_code) as m_get,
-        pytest.raises(HTTPStatusError, match="Client error '401 Unauthorized'"),
-    ):
+
+    respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=401)
+
+    with pytest.raises(HTTPStatusError, match="Client error '401 Unauthorized'"):
         api.device_info(token, mac_address)
-    assert m_get.call_count == 1
 
 
-def test_mqtt_command():
+def test_mqtt_command(respx_mock: Router):
     json_response = '"Command 0123456789abcdef executed successfully"'
     payload = {"key": "value"}
-    with patch_httpx_put(json_response) as m_put:
-        assert api.mqtt_command(token, mac_address, payload) == json_response
-    assert m_put.call_args_list == [
-        mock.call(
-            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
-            "mqtt/command",
-            json={"mac_address": "aabbccddeeff", "key": "value"},
-            headers={"Authorization": "Bearer token"},
-        )
-    ]
+
+    respx_mock.put(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+    ) % Response(status_code=200, json=json_response)
+
+    assert api.mqtt_command(token, mac_address, payload) == json_response
 
 
-def test_mqtt_command_error():
+def test_mqtt_command_error(respx_mock: Router):
     """Error status should be raised."""
     json_response = {}
     status_code = 401
     payload = {"key": "value"}
-    with (
-        patch_httpx_put(json_response, status_code) as m_put,
-        pytest.raises(HTTPStatusError, match="Client error '401 Unauthorized'"),
-    ):
+
+    respx_mock.put(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+    ) % Response(status_code=status_code, json=json_response)
+    with pytest.raises(HTTPStatusError, match="Client error '401 Unauthorized'"):
         api.mqtt_command(token, mac_address, payload)
-    assert m_put.call_count == 1
 
 
-def test_check_connection():
+def test_check_connection(respx_mock: Router):
     json_response = '"Command 00030529000154df executed successfully"'
-    with patch_httpx_put(json_response) as m_put:
-        assert api.check_connection(token, mac_address) == json_response
-    assert m_put.call_args_list == [
-        mock.call(
-            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
-            "mqtt/command",
-            json={
-                "mac_address": "aabbccddeeff",
-                "name": "check",
-            },
-            headers={"Authorization": "Bearer token"},
-        )
-    ]
+
+    respx_mock.put(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+    ) % Response(status_code=200, json=json_response)
+
+    assert api.check_connection(token, mac_address) == json_response
 
 
 @pytest.mark.parametrize(
@@ -157,23 +134,15 @@ def test_check_connection():
         ("set_power_off", 0),
     ),
 )
-def test_set_power(method, expected_value):
+def test_set_power(method, expected_value, respx_mock: Router):
     json_response = '"Value is already x"'
     set_power_method = getattr(api, method)
-    with patch_httpx_put(json_response) as m_put:
-        assert set_power_method(token, mac_address) == json_response
-    assert m_put.call_args_list == [
-        mock.call(
-            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
-            "mqtt/command",
-            json={
-                "mac_address": "aabbccddeeff",
-                "name": "power",
-                "value": expected_value,
-            },
-            headers={"Authorization": "Bearer token"},
-        )
-    ]
+
+    respx_mock.put(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+    ) % Response(status_code=200, json=json_response)
+
+    assert set_power_method(token, mac_address) == json_response
 
 
 @pytest.mark.parametrize(
@@ -183,99 +152,78 @@ def test_set_power(method, expected_value):
         (False, api.Power.OFF),
     ),
 )
-def test_get_power(power, expected_value):
+def test_get_power(power, expected_value, respx_mock: Router):
     json_response = {"status": {"commands": {"power": power}}}
-    with patch_httpx_get(json_response) as m_get:
-        assert api.get_power(token, mac_address) == expected_value
-    assert m_get.call_args_list == [
-        mock.call(
-            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
-            "device/aabbccddeeff/info",
-            headers={"Authorization": "Bearer token"},
-        )
-    ]
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+    assert api.get_power(token, mac_address) == expected_value
+    assert route.called
 
 
-def test_get_environment_temperature():
+def test_get_environment_temperature(respx_mock: Router):
     temperature = 16.7
     json_response = {"status": {"temperatures": {"enviroment": temperature}}}
-    with patch_httpx_get(json_response) as m_get:
-        assert api.get_environment_temperature(token, mac_address) == temperature
-    assert m_get.call_count == 1
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+    assert api.get_environment_temperature(token, mac_address) == temperature
+    assert route.called
 
 
-def test_get_target_temperature():
+def test_get_target_temperature(respx_mock: Router):
     temperature = 17.8
     json_response = {
         "nvm": {"user_parameters": {"enviroment_1_temperature": temperature}}
     }
-    with patch_httpx_get(json_response) as m_get:
-        assert api.get_target_temperature(token, mac_address) == temperature
-    assert m_get.call_count == 1
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+    assert api.get_target_temperature(token, mac_address) == temperature
+    assert route.called
 
 
-def test_set_target_temperature():
+def test_set_target_temperature(respx_mock: Router):
     temperature = 18.9
     json_response = "'Command 0006052500b558ab executed successfully'"
-    with patch_httpx_put(json_response) as m_put:
-        assert (
-            api.set_target_temperature(token, mac_address, temperature) == json_response
-        )
-    assert m_put.call_args_list == [
-        mock.call(
-            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
-            "mqtt/command",
-            json={
-                "mac_address": "aabbccddeeff",
-                "name": "enviroment_1_temperature",
-                "value": temperature,
-            },
-            headers={"Authorization": "Bearer token"},
-        )
-    ]
+    route = respx_mock.put(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+    ) % Response(status_code=200, json=json_response)
+    assert api.set_target_temperature(token, mac_address, temperature) == json_response
+    assert route.called
 
 
-def test_get_alarm_reset():
+def test_get_alarm_reset(respx_mock: Router):
     alarm_reset = False
     json_response = {"status": {"commands": {"alarm_reset": alarm_reset}}}
-    with patch_httpx_get(json_response) as m_get:
-        assert api.get_alarm_reset(token, mac_address) == alarm_reset
-    assert m_get.call_count == 1
+    respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+    assert api.get_alarm_reset(token, mac_address) == alarm_reset
 
 
-def test_get_perform_cochlea_loading():
+def test_get_perform_cochlea_loading(respx_mock: Router):
     perform_cochlea_loading = True
     json_response = {
         "status": {"commands": {"perform_cochlea_loading": perform_cochlea_loading}}
     }
-    with patch_httpx_get(json_response) as m_get:
-        assert (
-            api.get_perform_cochlea_loading(token, mac_address)
-            == perform_cochlea_loading
-        )
-    assert m_get.call_count == 1
+    respx_mock.get(DEVICE_INFO_URL) % Response(status_code=200, json=json_response)
+    assert (
+        api.get_perform_cochlea_loading(token, mac_address) == perform_cochlea_loading
+    )
 
 
-def test_set_perform_cochlea_loading():
+def test_set_perform_cochlea_loading(respx_mock: Router):
     cochlea_loading = True
     json_response = "'Command 0006031c00104855 executed successfully'"
-    with patch_httpx_put(json_response) as m_put:
-        assert (
-            api.set_perform_cochlea_loading(token, mac_address, cochlea_loading)
-            == json_response
-        )
-    assert m_put.call_args_list == [
-        mock.call(
-            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
-            "mqtt/command",
-            json={
-                "mac_address": "aabbccddeeff",
-                "name": "cochlea_loading",
-                "value": cochlea_loading,
-            },
-            headers={"Authorization": "Bearer token"},
-        )
-    ]
+    route = respx_mock.put(MQTT_COMMAND_URL) % Response(
+        status_code=200, json=json_response
+    )
+    assert (
+        api.set_perform_cochlea_loading(token, mac_address, cochlea_loading)
+        == json_response
+    )
+    assert route.called
 
 
 @pytest.mark.parametrize(
@@ -285,16 +233,19 @@ def test_set_perform_cochlea_loading():
         (1, [mock.call("Only 1 fan(s) available.", stacklevel=2)], 0),
     ),
 )
-def test_get_fan_speed(fans_number, warning, expected_speed):
+def test_get_fan_speed(fans_number, warning, expected_speed, respx_mock: Router):
     fan_id = 2
     speed = 3
     json_response = {
         "status": {"fans": {f"fan_{fan_id}_speed": speed}},
         "nvm": {"installer_parameters": {"fans_number": fans_number}},
     }
-    with patch_httpx_get(json_response) as m_get, patch_warn() as m_warn:
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+    with patch_warn() as m_warn:
         assert api.get_fan_speed(token, mac_address, fan_id) == expected_speed
-    assert m_get.call_count == 1
+    assert route.called
     assert m_warn.call_args_list == warning
 
 
@@ -305,127 +256,97 @@ def test_get_fan_speed(fans_number, warning, expected_speed):
         (1, [mock.call("Only 1 fan(s) available.", stacklevel=2)], ""),
     ),
 )
-def test_set_fan_speed(fans_number, warning, expected_return):
+def test_set_fan_speed(fans_number, warning, expected_return, respx_mock: Router):
     fan_id = 2
     speed = 3
     get_json_response = {"nvm": {"installer_parameters": {"fans_number": fans_number}}}
     put_json_response = "'Command executed successfully'"
-    with patch_httpx_get(get_json_response) as m_get, patch_warn() as m_warn:
-        with patch_httpx_put(put_json_response) as m_put:
-            assert (
-                api.set_fan_speed(token, mac_address, fan_id, speed) == expected_return
-            )
-    assert m_get.call_count == 1
+    get_route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=get_json_response)
+    put_route = respx_mock.put(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+    ) % Response(status_code=200, json=put_json_response)
+    with patch_warn() as m_warn:
+        assert api.set_fan_speed(token, mac_address, fan_id, speed) == expected_return
+    assert get_route.called
     assert m_warn.call_args_list == warning
-    assert (
-        m_put.call_args_list == []
-        if warning
-        else [
-            mock.call(
-                "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
-                "mqtt/command",
-                json={
-                    "mac_address": "aabbccddeeff",
-                    "name": f"fan_{fan_id}_speed",
-                    "value": speed,
-                },
-                headers={"Authorization": "Bearer token"},
-            )
-        ]
-    )
+    if warning:
+        assert not put_route.called
+    else:
+        assert put_route.called
 
 
-def test_get_airkare():
+def test_get_airkare(respx_mock: Router):
     airkare_function = False
     json_response = {"status": {"flags": {"is_airkare_active": airkare_function}}}
-    with patch_httpx_get(json_response) as m_get:
-        assert api.get_airkare(token, mac_address) == airkare_function
-    assert m_get.call_count == 1
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+    assert api.get_airkare(token, mac_address) == airkare_function
+    assert route.called
 
 
-def test_set_airkare():
+def test_set_airkare(respx_mock: Router):
     airkare = True
     json_response = "'Command executed successfully'"
-    with patch_httpx_put(json_response) as m_put:
-        assert api.set_airkare(token, mac_address, airkare) == json_response
-    assert m_put.call_args_list == [
-        mock.call(
-            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
-            "mqtt/command",
-            json={
-                "mac_address": "aabbccddeeff",
-                "name": "airkare_function",
-                "value": airkare,
-            },
-            headers={"Authorization": "Bearer token"},
-        )
-    ]
+    route = respx_mock.put(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+    ) % Response(status_code=200, json=json_response)
+    assert api.set_airkare(token, mac_address, airkare) == json_response
+    assert route.called
 
 
-def test_get_relax_mode():
+def test_get_relax_mode(respx_mock: Router):
     relax_mode = False
     json_response = {"status": {"flags": {"is_relax_active": relax_mode}}}
-    with patch_httpx_get(json_response) as m_get:
-        assert api.get_relax_mode(token, mac_address) == relax_mode
-    assert m_get.call_count == 1
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+    assert api.get_relax_mode(token, mac_address) == relax_mode
+    assert route.called
 
 
-def test_set_relax_mode():
+def test_set_relax_mode(respx_mock: Router):
     relax_mode = True
     json_response = "'Command executed successfully'"
-    with patch_httpx_put(json_response) as m_put:
-        assert api.set_relax_mode(token, mac_address, relax_mode) == json_response
-    assert m_put.call_args_list == [
-        mock.call(
-            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
-            "mqtt/command",
-            json={
-                "mac_address": "aabbccddeeff",
-                "name": "relax_mode",
-                "value": relax_mode,
-            },
-            headers={"Authorization": "Bearer token"},
-        )
-    ]
+    route = respx_mock.put(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+    ) % Response(status_code=200, json=json_response)
+    assert api.set_relax_mode(token, mac_address, relax_mode) == json_response
+    assert route.called
 
 
-def test_get_manual_power_level():
+def test_get_manual_power_level(respx_mock: Router):
     manual_power = 1
     json_response = {"nvm": {"user_parameters": {"manual_power": manual_power}}}
-    with patch_httpx_get(json_response) as m_get:
-        assert api.get_manual_power_level(token, mac_address) == manual_power
-    assert m_get.call_count == 1
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+    assert api.get_manual_power_level(token, mac_address) == manual_power
+    assert route.called
 
 
-def test_set_manual_power_level():
+def test_set_manual_power_level(respx_mock: Router):
     power_level = 3
     json_response = "'Command executed successfully'"
-    with patch_httpx_put(json_response) as m_put:
-        assert (
-            api.set_manual_power_level(token, mac_address, power_level) == json_response
-        )
-    assert m_put.call_args_list == [
-        mock.call(
-            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
-            "mqtt/command",
-            json={
-                "mac_address": "aabbccddeeff",
-                "name": "power_level",
-                "value": power_level,
-            },
-            headers={"Authorization": "Bearer token"},
-        )
-    ]
+    route = respx_mock.put(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+    ) % Response(status_code=200, json=json_response)
+    assert api.set_manual_power_level(token, mac_address, power_level) == json_response
+    assert route.called
 
 
-def test_get_standby_mode():
+def test_get_standby_mode(respx_mock: Router):
     is_standby_active = False
     json_response = {
         "nvm": {"user_parameters": {"is_standby_active": is_standby_active}}
     }
-    with patch_httpx_get(json_response) as m_get:
-        assert api.get_standby_mode(token, mac_address) == is_standby_active
-    assert m_get.call_count == 1
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+    assert api.get_standby_mode(token, mac_address) == is_standby_active
+    assert route.called
 
 
 @pytest.mark.parametrize(
@@ -439,61 +360,44 @@ def test_get_standby_mode():
         ),
     ),
 )
-def test_set_standby_mode(is_auto, warning, expected_return):
+def test_set_standby_mode(is_auto, warning, expected_return, respx_mock: Router):
     standby_mode = True
     get_json_response = {"nvm": {"user_parameters": {"is_auto": is_auto}}}
     put_json_response = "'Command executed successfully'"
-    with patch_httpx_get(get_json_response) as m_get, patch_warn() as m_warn:
-        with patch_httpx_put(put_json_response) as m_put:
-            assert (
-                api.set_standby_mode(token, mac_address, standby_mode)
-                == expected_return
-            )
-    assert m_get.call_count == 1
+    get_route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=get_json_response)
+    put_route = respx_mock.put(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+    ) % Response(status_code=200, json=put_json_response)
+    with patch_warn() as m_warn:
+        assert api.set_standby_mode(token, mac_address, standby_mode) == expected_return
+    assert get_route.called
     assert m_warn.call_args_list == warning
-    assert (
-        m_put.call_args_list == []
-        if warning
-        else [
-            mock.call(
-                "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
-                "mqtt/command",
-                json={
-                    "mac_address": "aabbccddeeff",
-                    "name": "standby_mode",
-                    "value": standby_mode,
-                },
-                headers={"Authorization": "Bearer token"},
-            )
-        ]
-    )
+    if warning:
+        assert not put_route.called
+    else:
+        assert put_route.called
 
 
-def test_get_chrono_mode():
+def test_get_chrono_mode(respx_mock: Router):
     mode = False
     json_response = {"status": {"flags": {"is_crono_active": mode}}}
-    with patch_httpx_get(json_response) as m_get:
-        assert api.get_chrono_mode(token, mac_address) == mode
-    assert m_get.call_count == 1
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+    assert api.get_chrono_mode(token, mac_address) == mode
+    assert route.called
 
 
-def test_set_chrono_mode():
+def test_set_chrono_mode(respx_mock: Router):
     mode = True
     json_response = "'Command executed successfully'"
-    with patch_httpx_put(json_response) as m_put:
-        assert api.set_chrono_mode(token, mac_address, mode) == json_response
-    assert m_put.call_args_list == [
-        mock.call(
-            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
-            "mqtt/command",
-            json={
-                "mac_address": "aabbccddeeff",
-                "name": "chrono_mode",
-                "value": mode,
-            },
-            headers={"Authorization": "Bearer token"},
-        )
-    ]
+    route = respx_mock.put(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+    ) % Response(status_code=200, json=json_response)
+    assert api.set_chrono_mode(token, mac_address, mode) == json_response
+    assert route.called
 
 
 @pytest.mark.parametrize(
@@ -503,45 +407,42 @@ def test_set_chrono_mode():
         (True, 1234, 1234),
     ),
 )
-def test_get_easy_timer(mode, time, expected_return):
+def test_get_easy_timer(mode, time, expected_return, respx_mock: Router):
     json_response = {
         "status": {"flags": {"is_easytimer_active": mode}, "easytimer": {"time": time}}
     }
-    with patch_httpx_get(json_response) as m_get:
-        assert api.get_easy_timer(token, mac_address) == expected_return
-    assert m_get.call_count == 1
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+    assert api.get_easy_timer(token, mac_address) == expected_return
+    assert route.called
 
 
-def test_set_easy_timer():
+def test_set_easy_timer(respx_mock: Router):
     mode = True
     json_response = "'Command executed successfully'"
-    with patch_httpx_put(json_response) as m_put:
-        assert api.set_easy_timer(token, mac_address, mode) == json_response
-    assert m_put.call_args_list == [
-        mock.call(
-            "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/"
-            "mqtt/command",
-            json={
-                "mac_address": "aabbccddeeff",
-                "name": "easytimer",
-                "value": mode,
-            },
-            headers={"Authorization": "Bearer token"},
-        )
-    ]
+    route = respx_mock.put(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+    ) % Response(status_code=200, json=json_response)
+    assert api.set_easy_timer(token, mac_address, mode) == json_response
+    assert route.called
 
 
-def test_get_autonomy_time():
+def test_get_autonomy_time(respx_mock: Router):
     time = 2100
     json_response = {"status": {"pellet": {"autonomy_time": time}}}
-    with patch_httpx_get(json_response) as m_get:
-        assert api.get_autonomy_time(token, mac_address) == time
-    assert m_get.call_count == 1
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+    assert api.get_autonomy_time(token, mac_address) == time
+    assert route.called
 
 
-def test_get_pellet_reserve():
+def test_get_pellet_reserve(respx_mock: Router):
     mode = False
     json_response = {"status": {"flags": {"is_pellet_in_reserve": mode}}}
-    with patch_httpx_get(json_response) as m_get:
-        assert api.get_pellet_reserve(token, mac_address) == mode
-    assert m_get.call_count == 1
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+    assert api.get_pellet_reserve(token, mac_address) == mode
+    assert route.called

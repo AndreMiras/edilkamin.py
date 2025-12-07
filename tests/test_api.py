@@ -6,21 +6,21 @@ from respx import Router
 
 from edilkamin import api
 
-DEVICE_INFO_URL = "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+DEVICE_INFO_URL = "https://the-mind-api.edilkamin.com/device/aabbccddeeff/info"
 
 MQTT_COMMAND_URL = (
-    "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+    "https://the-mind-api.edilkamin.com/mqtt/command"
 )
 
 token = "token"
 mac_address = "aabbccddeeff"
 
 
-def patch_cognito(access_token):
+def patch_cognito(id_token):
     m_get_user = mock.Mock()
-    m_get_user._metadata = {"access_token": access_token}
+    m_get_user._metadata = {"id_token": id_token}
     m_cognito = mock.Mock()
-    m_cognito.access_token = access_token
+    m_cognito.id_token = id_token
     m_cognito.return_value.get_user.return_value = m_get_user
     return mock.patch("edilkamin.api.Cognito", m_cognito)
 
@@ -32,11 +32,11 @@ def patch_warn():
 def test_sign_in():
     username = "username"
     password = "password"
-    access_token = "token"
+    id_token = "token"
     m_get_user = mock.Mock()
-    m_get_user._metadata = {"access_token": access_token}
-    with patch_cognito(access_token) as m_cognito:
-        assert api.sign_in(username, password) == access_token
+    m_get_user._metadata = {"id_token": id_token}
+    with patch_cognito(id_token) as m_cognito:
+        assert api.sign_in(username, password) == id_token
     assert m_cognito().authenticate.call_args_list == [mock.call(password)]
     assert m_cognito().get_user.call_args_list == [mock.call()]
 
@@ -45,7 +45,7 @@ def test_device_info(respx_mock: Router):
     json_response = {}
 
     respx_mock.get(
-        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+        "https://the-mind-api.edilkamin.com/device/aabbccddeeff/info"
     ) % Response(status_code=200, json=json_response)
 
     assert api.device_info(token, mac_address) == json_response
@@ -191,7 +191,7 @@ def test_device_info_error(respx_mock: Router):
     """Error status should be raised."""
 
     respx_mock.get(
-        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+        "https://the-mind-api.edilkamin.com/device/aabbccddeeff/info"
     ) % Response(status_code=401)
 
     with pytest.raises(HTTPStatusError, match="Client error '401 Unauthorized'"):
@@ -203,7 +203,7 @@ def test_mqtt_command(respx_mock: Router):
     payload = {"key": "value"}
 
     respx_mock.put(
-        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+        "https://the-mind-api.edilkamin.com/mqtt/command"
     ) % Response(status_code=200, json=json_response)
 
     assert api.mqtt_command(token, mac_address, payload) == json_response
@@ -216,7 +216,7 @@ def test_mqtt_command_error(respx_mock: Router):
     payload = {"key": "value"}
 
     respx_mock.put(
-        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+        "https://the-mind-api.edilkamin.com/mqtt/command"
     ) % Response(status_code=status_code, json=json_response)
     with pytest.raises(HTTPStatusError, match="Client error '401 Unauthorized'"):
         api.mqtt_command(token, mac_address, payload)
@@ -226,7 +226,7 @@ def test_check_connection(respx_mock: Router):
     json_response = '"Command 00030529000154df executed successfully"'
 
     respx_mock.put(
-        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+        "https://the-mind-api.edilkamin.com/mqtt/command"
     ) % Response(status_code=200, json=json_response)
 
     assert api.check_connection(token, mac_address) == json_response
@@ -244,7 +244,7 @@ def test_set_power(method, expected_value, respx_mock: Router):
     set_power_method = getattr(api, method)
 
     respx_mock.put(
-        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+        "https://the-mind-api.edilkamin.com/mqtt/command"
     ) % Response(status_code=200, json=json_response)
 
     assert set_power_method(token, mac_address) == json_response
@@ -260,7 +260,7 @@ def test_set_power(method, expected_value, respx_mock: Router):
 def test_get_power(power, expected_value, respx_mock: Router):
     json_response = {"status": {"commands": {"power": power}}}
     route = respx_mock.get(
-        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+        "https://the-mind-api.edilkamin.com/device/aabbccddeeff/info"
     ) % Response(status_code=200, json=json_response)
     assert api.get_power(token, mac_address) == expected_value
     assert route.called
@@ -270,7 +270,7 @@ def test_get_environment_temperature(respx_mock: Router):
     temperature = 16.7
     json_response = {"status": {"temperatures": {"enviroment": temperature}}}
     route = respx_mock.get(
-        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+        "https://the-mind-api.edilkamin.com/device/aabbccddeeff/info"
     ) % Response(status_code=200, json=json_response)
     assert api.get_environment_temperature(token, mac_address) == temperature
     assert route.called
@@ -282,7 +282,7 @@ def test_get_target_temperature(respx_mock: Router):
         "nvm": {"user_parameters": {"enviroment_1_temperature": temperature}}
     }
     route = respx_mock.get(
-        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+        "https://the-mind-api.edilkamin.com/device/aabbccddeeff/info"
     ) % Response(status_code=200, json=json_response)
     assert api.get_target_temperature(token, mac_address) == temperature
     assert route.called
@@ -292,7 +292,7 @@ def test_set_target_temperature(respx_mock: Router):
     temperature = 18.9
     json_response = "'Command 0006052500b558ab executed successfully'"
     route = respx_mock.put(
-        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/mqtt/command"
+        "https://the-mind-api.edilkamin.com/mqtt/command"
     ) % Response(status_code=200, json=json_response)
     assert api.set_target_temperature(token, mac_address, temperature) == json_response
     assert route.called

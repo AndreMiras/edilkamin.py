@@ -22,7 +22,7 @@ def patch_discover_devices():
     ),
 )
 async def test_main(env, discover_devices_called, respx_mock: Router):
-    access_token = "token"
+    id_token = "token"
     env = {
         **{
             "USERNAME": "username",
@@ -35,10 +35,10 @@ async def test_main(env, discover_devices_called, respx_mock: Router):
         status_code=200, json={}
     )
     get_route_env = respx_mock.get(
-        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/mac_address/info"
+        "https://the-mind-api.edilkamin.com/device/mac_address/info"
     ) % Response(status_code=200, json={})
     put_route = respx_mock.put(MQTT_COMMAND_URL) % Response(status_code=200, json={})
-    with mock.patch.dict("os.environ", env), patch_cognito(access_token) as m_cognito:
+    with mock.patch.dict("os.environ", env), patch_cognito(id_token) as m_cognito:
         with patch_discover_devices() as m_discover_devices:
             assert await __main__.main() is None
     assert m_cognito.called is True

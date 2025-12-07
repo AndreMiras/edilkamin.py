@@ -21,7 +21,7 @@ def sign_in(username: str, password: str) -> str:
     cognito = Cognito(constants.USER_POOL_ID, constants.CLIENT_ID, username=username)
     cognito.authenticate(password)
     user = cognito.get_user()
-    return user._metadata["access_token"]
+    return user._metadata["id_token"]
 
 
 def format_mac(mac: str):

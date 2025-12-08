@@ -20,6 +20,9 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/AndreMiras/edilkamin.py"
 
+[project.scripts]
+edilkamin = "edilkamin.__main__:main"
+
 [project.optional-dependencies]
 ble = ["simplepyble"]
 dev = [
@@ -39,6 +42,9 @@ doc = [
     "sphinx",
     "sphinx-rtd-theme",
 ]
+
+[tool.setuptools.packages.find]
+include = ["edilkamin*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

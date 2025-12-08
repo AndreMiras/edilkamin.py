@@ -8,32 +8,25 @@ We're using [semantic versioning](https://semver.org/) where `major.minor.patch`
 VERSION=major.minor.patch
 ```
 
-## Start the release
+## Update pyproject.toml and tag
+
+Update the [pyproject.toml](../pyproject.toml) `version` to match the new release version.
 
 ```sh
-git checkout -b release/$VERSION
+sed --regexp-extended 's/^version = "(.+)"/version = "'$VERSION'"/' --in-place pyproject.toml
 ```
 
-Now update the [pyproject.toml](../pyproject.toml) `version` to match the new release version.
-
-```sh
-sed --regexp-extended 's/version = "(.+)"/version = "'$VERSION'"/' --in-place pyproject.toml
-```
-
-Then commit/push and create a pull request targeting the `main` branch.
+Then commit and tag:
 
 ```sh
 git commit -a -m ":bookmark: $VERSION"
-git push origin release/$VERSION
+git tag -a $VERSION -m ":bookmark: $VERSION"
 ```
 
-Once the pull requests is approved/merged, tag the `main` branch with the version.
-In the case of a sole owner, no pull request is required, but at least verify the CI builds green.
+Push everything including tags:
 
 ```sh
-git checkout main
-git pull
-git tag -a $VERSION -m ":bookmark: $VERSION"
+git push
 git push --tags
 ```
 

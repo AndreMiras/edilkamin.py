@@ -25,11 +25,6 @@ def patch_cognito(access_token):
     return mock.patch("edilkamin.api.Cognito", m_cognito)
 
 
-def patch_get_adapters(adapters):
-    m_get_adapters = mock.Mock(return_value=adapters)
-    return mock.patch("simplepyble.Adapter.get_adapters", m_get_adapters)
-
-
 def patch_warn():
     return mock.patch("edilkamin.api.warnings.warn")
 
@@ -44,32 +39,6 @@ def test_sign_in():
         assert api.sign_in(username, password) == access_token
     assert m_cognito().authenticate.call_args_list == [mock.call(password)]
     assert m_cognito().get_user.call_args_list == [mock.call()]
-
-
-@pytest.mark.parametrize(
-    "convert, expected_devices",
-    (
-        (True, ("a8:03:2a:fe:d5:09",)),
-        (False, ("A8:03:2A:FE:D5:0B",)),
-    ),
-)
-def test_discover_devices(convert, expected_devices):
-    adapters = [
-        mock.Mock(
-            scan_get_results=lambda: [
-                mock.Mock(
-                    identifier=lambda: "EDILKAMIN_EP",
-                    address=lambda: "A8:03:2A:FE:D5:0B",
-                ),
-                mock.Mock(
-                    identifier=lambda: "Other device",
-                    address=lambda: "00:11:22:33:44:55",
-                ),
-            ]
-        )
-    ]
-    with patch_get_adapters(adapters):
-        assert api.discover_devices(convert) == expected_devices
 
 
 def test_device_info(respx_mock: Router):
@@ -446,3 +415,9 @@ def test_get_pellet_reserve(respx_mock: Router):
     ) % Response(status_code=200, json=json_response)
     assert api.get_pellet_reserve(token, mac_address) == mode
     assert route.called
+
+
+def test_device_info_get_serial_number():
+    serial = "ABC123456"
+    info = {"component_info": {"motherboard": {"serial_number": serial}}}
+    assert api.device_info_get_serial_number(info) == serial

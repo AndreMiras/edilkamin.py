@@ -1,5 +1,6 @@
 __all__ = [
     "Power",
+    "bluetooth_mac_to_wifi_mac",
     "check_connection",
     "device_info",
     "device_info_get_airkare",
@@ -14,6 +15,7 @@ __all__ = [
     "device_info_get_perform_cochlea_loading",
     "device_info_get_power",
     "device_info_get_relax_mode",
+    "device_info_get_serial_number",
     "device_info_get_standby_mode",
     "device_info_get_target_temperature",
     "discover_devices",
@@ -61,10 +63,9 @@ from edilkamin.api import (
     device_info_get_perform_cochlea_loading,
     device_info_get_power,
     device_info_get_relax_mode,
+    device_info_get_serial_number,
     device_info_get_standby_mode,
     device_info_get_target_temperature,
-    discover_devices,
-    discover_devices_helper,
     get_airkare,
     get_autonomy_time,
     get_chrono_mode,
@@ -91,4 +92,9 @@ from edilkamin.api import (
     set_standby_mode,
     set_target_temperature,
     sign_in,
+)
+from edilkamin.ble import (
+    bluetooth_mac_to_wifi_mac,
+    discover_devices,
+    discover_devices_helper,
 )

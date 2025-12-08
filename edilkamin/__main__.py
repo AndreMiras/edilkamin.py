@@ -2,7 +2,7 @@
 import asyncio
 import os
 
-from edilkamin.api import device_info, discover_devices, set_power_off, sign_in
+from edilkamin import device_info, discover_devices, set_power_off, sign_in
 from edilkamin.utils import assert_env
 
 

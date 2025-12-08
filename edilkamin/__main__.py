@@ -6,7 +6,7 @@ import json
 import os
 import sys
 
-from edilkamin.api import device_info, sign_in
+from edilkamin.api import device_info, set_power_off, set_power_on, sign_in
 from edilkamin.ble import discover_devices
 
 
@@ -86,6 +86,88 @@ def cmd_info(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_power_on(args: argparse.Namespace) -> int:
+    """Handle the 'power-on' subcommand."""
+    username = get_env_or_arg(args, "username", "EDILKAMIN_USERNAME")
+    password = get_env_or_arg(args, "password", "EDILKAMIN_PASSWORD")
+    mac_address = get_env_or_arg(args, "mac_address", "EDILKAMIN_MAC_ADDRESS")
+
+    if not username:
+        print(
+            "Error: Username required. Use --username or set EDILKAMIN_USERNAME.",
+            file=sys.stderr,
+        )
+        return 1
+    if not password:
+        print(
+            "Error: Password required. Use --password or set EDILKAMIN_PASSWORD.",
+            file=sys.stderr,
+        )
+        return 1
+    if not mac_address:
+        print(
+            "Error: MAC address required. "
+            "Use --mac-address or set EDILKAMIN_MAC_ADDRESS.",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        token = sign_in(username, password)
+    except Exception as e:
+        print(f"Error: Authentication failed: {e}", file=sys.stderr)
+        return 1
+
+    try:
+        result = set_power_on(token, mac_address)
+        print(result)
+        return 0
+    except Exception as e:
+        print(f"Error: Failed to turn on device: {e}", file=sys.stderr)
+        return 1
+
+
+def cmd_power_off(args: argparse.Namespace) -> int:
+    """Handle the 'power-off' subcommand."""
+    username = get_env_or_arg(args, "username", "EDILKAMIN_USERNAME")
+    password = get_env_or_arg(args, "password", "EDILKAMIN_PASSWORD")
+    mac_address = get_env_or_arg(args, "mac_address", "EDILKAMIN_MAC_ADDRESS")
+
+    if not username:
+        print(
+            "Error: Username required. Use --username or set EDILKAMIN_USERNAME.",
+            file=sys.stderr,
+        )
+        return 1
+    if not password:
+        print(
+            "Error: Password required. Use --password or set EDILKAMIN_PASSWORD.",
+            file=sys.stderr,
+        )
+        return 1
+    if not mac_address:
+        print(
+            "Error: MAC address required. "
+            "Use --mac-address or set EDILKAMIN_MAC_ADDRESS.",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        token = sign_in(username, password)
+    except Exception as e:
+        print(f"Error: Authentication failed: {e}", file=sys.stderr)
+        return 1
+
+    try:
+        result = set_power_off(token, mac_address)
+        print(result)
+        return 0
+    except Exception as e:
+        print(f"Error: Failed to turn off device: {e}", file=sys.stderr)
+        return 1
+
+
 def create_parser() -> argparse.ArgumentParser:
     """Create the argument parser."""
     parser = argparse.ArgumentParser(
@@ -135,6 +217,54 @@ def create_parser() -> argparse.ArgumentParser:
         help="Pretty-print JSON output",
     )
     info_parser.set_defaults(func=cmd_info)
+
+    # power-on subcommand
+    power_on_parser = subparsers.add_parser(
+        "power-on",
+        help="Turn on device",
+        description="Turn on an Edilkamin device.",
+    )
+    power_on_parser.add_argument(
+        "--username",
+        "-u",
+        help="Edilkamin account username (or set EDILKAMIN_USERNAME)",
+    )
+    power_on_parser.add_argument(
+        "--password",
+        "-p",
+        help="Edilkamin account password (or set EDILKAMIN_PASSWORD)",
+    )
+    power_on_parser.add_argument(
+        "--mac-address",
+        "-m",
+        dest="mac_address",
+        help="Device MAC address (or set EDILKAMIN_MAC_ADDRESS)",
+    )
+    power_on_parser.set_defaults(func=cmd_power_on)
+
+    # power-off subcommand
+    power_off_parser = subparsers.add_parser(
+        "power-off",
+        help="Turn off device",
+        description="Turn off an Edilkamin device.",
+    )
+    power_off_parser.add_argument(
+        "--username",
+        "-u",
+        help="Edilkamin account username (or set EDILKAMIN_USERNAME)",
+    )
+    power_off_parser.add_argument(
+        "--password",
+        "-p",
+        help="Edilkamin account password (or set EDILKAMIN_PASSWORD)",
+    )
+    power_off_parser.add_argument(
+        "--mac-address",
+        "-m",
+        dest="mac_address",
+        help="Device MAC address (or set EDILKAMIN_MAC_ADDRESS)",
+    )
+    power_off_parser.set_defaults(func=cmd_power_off)
 
     return parser
 

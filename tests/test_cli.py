@@ -3,7 +3,14 @@
 import json
 from unittest import mock
 
-from edilkamin.__main__ import cmd_discover, cmd_info, create_parser, main
+from edilkamin.__main__ import (
+    cmd_discover,
+    cmd_info,
+    cmd_power_off,
+    cmd_power_on,
+    create_parser,
+    main,
+)
 
 
 def make_args(**kwargs):
@@ -68,6 +75,59 @@ class TestCreateParser:
                 "-m",
                 "aa:bb:cc:dd:ee:ff",
             ]
+        )
+        assert args.username == "user"
+        assert args.password == "pass"
+        assert args.mac_address == "aa:bb:cc:dd:ee:ff"
+
+    def test_parser_has_power_on_subcommand(self):
+        parser = create_parser()
+        args = parser.parse_args(["power-on"])
+        assert args.command == "power-on"
+
+    def test_parser_has_power_off_subcommand(self):
+        parser = create_parser()
+        args = parser.parse_args(["power-off"])
+        assert args.command == "power-off"
+
+    def test_power_on_accepts_credentials(self):
+        parser = create_parser()
+        args = parser.parse_args(
+            [
+                "power-on",
+                "--username",
+                "user",
+                "--password",
+                "pass",
+                "--mac-address",
+                "aa:bb:cc:dd:ee:ff",
+            ]
+        )
+        assert args.username == "user"
+        assert args.password == "pass"
+        assert args.mac_address == "aa:bb:cc:dd:ee:ff"
+
+    def test_power_off_accepts_credentials(self):
+        parser = create_parser()
+        args = parser.parse_args(
+            [
+                "power-off",
+                "--username",
+                "user",
+                "--password",
+                "pass",
+                "--mac-address",
+                "aa:bb:cc:dd:ee:ff",
+            ]
+        )
+        assert args.username == "user"
+        assert args.password == "pass"
+        assert args.mac_address == "aa:bb:cc:dd:ee:ff"
+
+    def test_power_commands_accept_short_flags(self):
+        parser = create_parser()
+        args = parser.parse_args(
+            ["power-on", "-u", "user", "-p", "pass", "-m", "aa:bb:cc:dd:ee:ff"]
         )
         assert args.username == "user"
         assert args.password == "pass"
@@ -222,6 +282,168 @@ class TestCmdInfo:
         # Verify decompressed data is displayed correctly
         assert output_json == expected_output
         assert output_json["component_info"]["motherboard"]["serial_number"] == "ABC123"
+
+
+class TestCmdPowerOn:
+    """Tests for power-on command."""
+
+    def test_power_on_missing_username(self, capsys, monkeypatch):
+        monkeypatch.delenv("EDILKAMIN_USERNAME", raising=False)
+        args = make_args(
+            username=None, password="pass", mac_address="aa:bb:cc:dd:ee:ff"
+        )
+        result = cmd_power_on(args)
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "Username required" in captured.err
+
+    def test_power_on_missing_password(self, capsys, monkeypatch):
+        monkeypatch.delenv("EDILKAMIN_PASSWORD", raising=False)
+        args = make_args(
+            username="user", password=None, mac_address="aa:bb:cc:dd:ee:ff"
+        )
+        result = cmd_power_on(args)
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "Password required" in captured.err
+
+    def test_power_on_missing_mac(self, capsys, monkeypatch):
+        monkeypatch.delenv("EDILKAMIN_MAC_ADDRESS", raising=False)
+        args = make_args(username="user", password="pass", mac_address=None)
+        result = cmd_power_on(args)
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "MAC address required" in captured.err
+
+    def test_power_on_success(self, capsys):
+        args = make_args(username="user", password="pass", mac_address="aabbccddeeff")
+        api_response = "Command 0123456789abcdef executed successfully"
+        with mock.patch("edilkamin.__main__.sign_in", return_value="token"):
+            with mock.patch(
+                "edilkamin.__main__.set_power_on", return_value=api_response
+            ):
+                result = cmd_power_on(args)
+        assert result == 0
+        captured = capsys.readouterr()
+        assert api_response in captured.out
+
+    def test_power_on_auth_failure(self, capsys):
+        args = make_args(username="user", password="wrong", mac_address="aabbccddeeff")
+        with mock.patch(
+            "edilkamin.__main__.sign_in", side_effect=Exception("Invalid credentials")
+        ):
+            result = cmd_power_on(args)
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "Authentication failed" in captured.err
+
+    def test_power_on_api_failure(self, capsys):
+        args = make_args(username="user", password="pass", mac_address="aabbccddeeff")
+        with mock.patch("edilkamin.__main__.sign_in", return_value="token"):
+            with mock.patch(
+                "edilkamin.__main__.set_power_on",
+                side_effect=Exception("Device not found"),
+            ):
+                result = cmd_power_on(args)
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "Failed to turn on device" in captured.err
+
+    def test_power_on_uses_env_vars(self, monkeypatch):
+        monkeypatch.setenv("EDILKAMIN_USERNAME", "env_user")
+        monkeypatch.setenv("EDILKAMIN_PASSWORD", "env_pass")
+        monkeypatch.setenv("EDILKAMIN_MAC_ADDRESS", "aabbccddeeff")
+        args = make_args(username=None, password=None, mac_address=None)
+        with mock.patch(
+            "edilkamin.__main__.sign_in", return_value="token"
+        ) as mock_sign_in:
+            with mock.patch(
+                "edilkamin.__main__.set_power_on",
+                return_value="Command executed successfully",
+            ):
+                cmd_power_on(args)
+        mock_sign_in.assert_called_once_with("env_user", "env_pass")
+
+
+class TestCmdPowerOff:
+    """Tests for power-off command."""
+
+    def test_power_off_missing_username(self, capsys, monkeypatch):
+        monkeypatch.delenv("EDILKAMIN_USERNAME", raising=False)
+        args = make_args(
+            username=None, password="pass", mac_address="aa:bb:cc:dd:ee:ff"
+        )
+        result = cmd_power_off(args)
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "Username required" in captured.err
+
+    def test_power_off_missing_password(self, capsys, monkeypatch):
+        monkeypatch.delenv("EDILKAMIN_PASSWORD", raising=False)
+        args = make_args(
+            username="user", password=None, mac_address="aa:bb:cc:dd:ee:ff"
+        )
+        result = cmd_power_off(args)
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "Password required" in captured.err
+
+    def test_power_off_missing_mac(self, capsys, monkeypatch):
+        monkeypatch.delenv("EDILKAMIN_MAC_ADDRESS", raising=False)
+        args = make_args(username="user", password="pass", mac_address=None)
+        result = cmd_power_off(args)
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "MAC address required" in captured.err
+
+    def test_power_off_success(self, capsys):
+        args = make_args(username="user", password="pass", mac_address="aabbccddeeff")
+        api_response = "Command 0123456789abcdef executed successfully"
+        with mock.patch("edilkamin.__main__.sign_in", return_value="token"):
+            with mock.patch(
+                "edilkamin.__main__.set_power_off", return_value=api_response
+            ):
+                result = cmd_power_off(args)
+        assert result == 0
+        captured = capsys.readouterr()
+        assert api_response in captured.out
+
+    def test_power_off_auth_failure(self, capsys):
+        args = make_args(username="user", password="wrong", mac_address="aabbccddeeff")
+        with mock.patch(
+            "edilkamin.__main__.sign_in", side_effect=Exception("Invalid credentials")
+        ):
+            result = cmd_power_off(args)
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "Authentication failed" in captured.err
+
+    def test_power_off_api_failure(self, capsys):
+        args = make_args(username="user", password="pass", mac_address="aabbccddeeff")
+        with mock.patch("edilkamin.__main__.sign_in", return_value="token"):
+            with mock.patch(
+                "edilkamin.__main__.set_power_off",
+                side_effect=Exception("Device not found"),
+            ):
+                result = cmd_power_off(args)
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "Failed to turn off device" in captured.err
+
+    def test_power_off_uses_env_vars(self, monkeypatch):
+        monkeypatch.setenv("EDILKAMIN_USERNAME", "env_user")
+        monkeypatch.setenv("EDILKAMIN_PASSWORD", "env_pass")
+        monkeypatch.setenv("EDILKAMIN_MAC_ADDRESS", "aabbccddeeff")
+        args = make_args(username=None, password=None, mac_address=None)
+        with mock.patch(
+            "edilkamin.__main__.sign_in", return_value="token"
+        ) as mock_sign_in:
+            with mock.patch(
+                "edilkamin.__main__.set_power_off",
+                return_value="Command executed successfully",
+            ):
+                cmd_power_off(args)
+        mock_sign_in.assert_called_once_with("env_user", "env_pass")
 
 
 class TestMain:

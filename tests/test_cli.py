@@ -194,6 +194,35 @@ class TestCmdInfo:
                 cmd_info(args)
         mock_sign_in.assert_called_once_with("env_user", "env_pass")
 
+    def test_info_with_buffer_response(self, capsys):
+        """CLI should display decompressed buffer data as JSON."""
+        args = make_args(
+            username="user", password="pass", mac_address="aabbccddeeff", pretty=False
+        )
+
+        # Expected output after decompression (device_info handles decompression)
+        expected_output = {
+            "component_info": {
+                "motherboard": {"serial_number": "ABC123", "version": "1.0"}
+            },
+            "mac_address": "aabbccddeeff",
+            "pk": 1,
+        }
+
+        with mock.patch("edilkamin.__main__.sign_in", return_value="token"):
+            with mock.patch(
+                "edilkamin.__main__.device_info", return_value=expected_output
+            ):
+                result = cmd_info(args)
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output_json = json.loads(captured.out)
+
+        # Verify decompressed data is displayed correctly
+        assert output_json == expected_output
+        assert output_json["component_info"]["motherboard"]["serial_number"] == "ABC123"
+
 
 class TestMain:
     """Tests for main entry point."""

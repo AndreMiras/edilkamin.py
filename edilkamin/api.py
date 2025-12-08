@@ -7,6 +7,7 @@ from pycognito import Cognito
 
 from edilkamin import constants
 from edilkamin.async_dispatch import syncable
+from edilkamin.buffer_utils import process_response
 from edilkamin.utils import get_endpoint, get_headers
 
 
@@ -29,14 +30,19 @@ def format_mac(mac: str):
 
 @syncable
 async def device_info(token: str, mac: str) -> typing.Dict:
-    """Retrieve device info for a given MAC address in the format `aabbccddeeff`."""
+    """Retrieve device info for a given MAC address in the format `aabbccddeeff`.
+
+    Automatically decompresses any gzip-compressed Buffer fields in the response.
+    """
     headers = get_headers(token)
     mac = format_mac(mac)
     url = get_endpoint(f"device/{mac}/info")
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers)
         response.raise_for_status()
-        return response.json()
+        raw_data = response.json()
+        # Process response to decompress any Buffer fields
+        return process_response(raw_data)
 
 
 @syncable

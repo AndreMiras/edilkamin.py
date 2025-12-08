@@ -51,6 +51,142 @@ def test_device_info(respx_mock: Router):
     assert api.device_info(token, mac_address) == json_response
 
 
+def test_device_info_with_buffer_response(respx_mock: Router):
+    """device_info should automatically decompress Buffer fields."""
+    import gzip
+    import json
+
+    component_data = {"motherboard": {"serial_number": "ABC123"}}
+    nvm_data = {"user_parameters": {"enviroment_1_temperature": 20}}
+    status_data = {"commands": {"power": 1}}
+
+    json_response = {
+        "component_info": {
+            "type": "Buffer",
+            "data": list(gzip.compress(json.dumps(component_data).encode())),
+        },
+        "nvm": {
+            "type": "Buffer",
+            "data": list(gzip.compress(json.dumps(nvm_data).encode())),
+        },
+        "status": {
+            "type": "Buffer",
+            "data": list(gzip.compress(json.dumps(status_data).encode())),
+        },
+        "mac_address": "aabbccddeeff",
+        "pk": 1,
+    }
+
+    respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+
+    result = api.device_info(token, mac_address)
+
+    # Verify buffers were decompressed
+    assert result["component_info"] == component_data
+    assert result["nvm"] == nvm_data
+    assert result["status"] == status_data
+    # Plain fields should remain unchanged
+    assert result["mac_address"] == "aabbccddeeff"
+    assert result["pk"] == 1
+
+
+def test_device_info_backward_compatible_plain_json(respx_mock: Router):
+    """device_info should still work with plain JSON responses."""
+    json_response = {
+        "component_info": {"motherboard": {"serial_number": "ABC123"}},
+        "nvm": {"user_parameters": {"enviroment_1_temperature": 20}},
+        "status": {"commands": {"power": 1}},
+        "mac_address": "aabbccddeeff",
+        "pk": 1,
+    }
+
+    respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+
+    result = api.device_info(token, mac_address)
+
+    # Plain JSON should pass through unchanged
+    assert result == json_response
+
+
+def test_get_serial_number_with_buffer_response(respx_mock: Router):
+    """get_serial_number should work with buffer responses."""
+    import gzip
+    import json
+
+    serial = "XYZ789"
+    component_data = {"motherboard": {"serial_number": serial}}
+
+    json_response = {
+        "component_info": {
+            "type": "Buffer",
+            "data": list(gzip.compress(json.dumps(component_data).encode())),
+        }
+    }
+
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+
+    result = api.get_serial_number(token, mac_address)
+
+    assert result == serial
+    assert route.called
+
+
+def test_get_power_with_buffer_response(respx_mock: Router):
+    """get_power should work with buffer responses."""
+    import gzip
+    import json
+
+    power = True
+    status_data = {"commands": {"power": power}}
+
+    json_response = {
+        "status": {
+            "type": "Buffer",
+            "data": list(gzip.compress(json.dumps(status_data).encode())),
+        }
+    }
+
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+
+    result = api.get_power(token, mac_address)
+
+    assert result == api.Power.ON
+    assert route.called
+
+
+def test_get_target_temperature_with_buffer_response(respx_mock: Router):
+    """get_target_temperature should work with buffer responses."""
+    import gzip
+    import json
+
+    temperature = 22.5
+    nvm_data = {"user_parameters": {"enviroment_1_temperature": temperature}}
+
+    json_response = {
+        "nvm": {
+            "type": "Buffer",
+            "data": list(gzip.compress(json.dumps(nvm_data).encode())),
+        }
+    }
+
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+
+    result = api.get_target_temperature(token, mac_address)
+
+    assert result == temperature
+    assert route.called
+
+
 def test_device_info_error(respx_mock: Router):
     """Error status should be raised."""
 

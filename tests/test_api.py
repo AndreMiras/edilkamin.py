@@ -567,3 +567,92 @@ def test_get_serial_number(respx_mock: Router):
     ) % Response(status_code=200, json=json_response)
     assert api.get_serial_number(token, mac_address) == serial
     assert route.called
+
+
+def test_serial_number_hex():
+    """Test hex encoding of serial numbers."""
+    # Simple ASCII
+    assert api.serial_number_hex("ABC123") == "414243313233"
+    # With control characters (like real device data)
+    raw = "\x1aC]7JSS   L\x19\x1a\x0c\xff"
+    hex_result = api.serial_number_hex(raw)
+    assert hex_result == "1a435d374a53532020204c191a0cc3bf"
+
+
+def test_serial_number_from_hex():
+    """Test hex decoding of serial numbers."""
+    # Simple ASCII
+    assert api.serial_number_from_hex("414243313233") == "ABC123"
+    # Round-trip with control characters
+    raw = "\x1aC]7JSS   L\x19\x1a\x0c\xff"
+    hex_encoded = api.serial_number_hex(raw)
+    assert api.serial_number_from_hex(hex_encoded) == raw
+
+
+def test_serial_number_display():
+    """Test display-safe serial number conversion."""
+    # Simple ASCII unchanged
+    assert api.serial_number_display("ABC123") == "ABC123"
+    # Control characters removed, spaces collapsed
+    raw = "\x1aC]7JSS   L\x19\x1a\x0c\xff"
+    display = api.serial_number_display(raw)
+    assert display == "C]7JSS L"
+    # Leading/trailing whitespace stripped
+    assert api.serial_number_display("  ABC  ") == "ABC"
+
+
+def test_register_device(respx_mock: Router):
+    """Test device registration."""
+    json_response = {
+        "macAddress": "aabbccddeeff",
+        "deviceName": "Test Stove",
+        "deviceRoom": "Living Room",
+    }
+
+    route = respx_mock.post(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device"
+    ) % Response(status_code=201, json=json_response)
+
+    result = api.register_device(
+        token, mac_address, "Test Stove", "Living Room", "ABC123456"
+    )
+
+    assert result == json_response
+    assert route.called
+
+    # Verify request body
+    import json as json_mod
+
+    request = route.calls.last.request
+    body = json_mod.loads(request.content)
+    assert body["macAddress"] == "aabbccddeeff"
+    assert body["deviceName"] == "Test Stove"
+    assert body["deviceRoom"] == "Living Room"
+    assert body["serialNumber"] == "ABC123456"
+
+
+def test_edit_device(respx_mock: Router):
+    """Test device editing."""
+    json_response = {
+        "macAddress": "aabbccddeeff",
+        "deviceName": "Updated Stove",
+        "deviceRoom": "Bedroom",
+    }
+
+    route = respx_mock.put(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff"
+    ) % Response(status_code=200, json=json_response)
+
+    result = api.edit_device(token, mac_address, "Updated Stove", "Bedroom")
+
+    assert result == json_response
+    assert route.called
+
+    # Verify request body
+    import json as json_mod
+
+    request = route.calls.last.request
+    body = json_mod.loads(request.content)
+    assert body["deviceName"] == "Updated Stove"
+    assert body["deviceRoom"] == "Bedroom"
+    assert "serialNumber" not in body  # edit_device doesn't require serial

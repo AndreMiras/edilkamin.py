@@ -376,12 +376,179 @@ async def get_pellet_reserve(token: str, mac_address: str) -> bool:
 
 
 def device_info_get_serial_number(info: typing.Dict) -> str:
-    """Get device serial number from cached info."""
+    """Get device serial number from cached info.
+
+    Note: Serial numbers may contain binary/control characters from device
+    firmware. Use serial_number_hex() or serial_number_display() for safe
+    string representations.
+    """
     return info["component_info"]["motherboard"]["serial_number"]
 
 
 @syncable
 async def get_serial_number(token: str, mac_address: str) -> str:
-    """Get device serial number."""
+    """Get device serial number.
+
+    Note: Serial numbers may contain binary/control characters from device
+    firmware. Use serial_number_hex() or serial_number_display() for safe
+    string representations.
+    """
     info = await device_info(token, mac_address)
     return device_info_get_serial_number(info)
+
+
+def serial_number_hex(serial: str) -> str:
+    """Convert serial number to hex string for safe storage/display.
+
+    Serial numbers from Edilkamin devices may contain binary control
+    characters. This function converts the serial to a hex string that
+    is safe to store, display, and transmit.
+
+    Args:
+        serial: Raw serial number string (may contain binary data)
+
+    Returns:
+        Hex-encoded string (e.g., "1a435d374a5353...")
+
+    Example:
+        >>> raw = "\x1aC]7JSS   L\x19\x1a\x0c\xff"  # Example with control chars
+        >>> hex_serial = serial_number_hex(raw)
+        >>> print(hex_serial)
+        1a435d374a53532020204c191a0cc3bf
+    """
+    return serial.encode("utf-8", errors="surrogateescape").hex()
+
+
+def serial_number_from_hex(hex_serial: str) -> str:
+    """Convert hex-encoded serial number back to raw string.
+
+    Args:
+        hex_serial: Hex-encoded serial string
+
+    Returns:
+        Raw serial number string
+
+    Example:
+        >>> raw = serial_number_from_hex("1a435d374a53532020204c191a0cc3bf")
+    """
+    return bytes.fromhex(hex_serial).decode("utf-8", errors="surrogateescape")
+
+
+def serial_number_display(serial: str) -> str:
+    """Get a display-safe version of the serial number.
+
+    Removes non-printable characters and strips whitespace, returning
+    only the human-readable portion of the serial number.
+
+    Args:
+        serial: Raw serial number string (may contain binary data)
+
+    Returns:
+        Printable characters only, stripped of leading/trailing whitespace
+
+    Example:
+        >>> raw = "\x1aC]7JSS   L\x19\x1a\x0c\xff"  # Contains control chars
+        >>> display = serial_number_display(raw)
+        >>> print(display)
+        C]7JSS L
+    """
+    # Keep only printable ASCII characters (0x20-0x7E) and common whitespace
+    printable = "".join(c if (0x20 <= ord(c) <= 0x7E) else " " for c in serial)
+    # Collapse multiple spaces and strip
+    return " ".join(printable.split())
+
+
+@syncable
+async def register_device(
+    token: str,
+    mac_address: str,
+    device_name: str,
+    device_room: str,
+    serial_number: str,
+) -> typing.Dict:
+    """Register/associate a device with the user account.
+
+    This function registers a new device or updates an existing registration.
+    The API performs an upsert operation (returns 201 for both new and
+    existing devices).
+
+    Note: The API accepts serial numbers in any format (raw, hex-encoded,
+    or base64-encoded). For consistency, you can use the raw serial from
+    get_serial_number() or a hex-encoded version from serial_number_hex().
+
+    Args:
+        token: OAuth access token from sign_in()
+        mac_address: Device WiFi MAC address (e.g., "aa:bb:cc:dd:ee:ff")
+        device_name: User-provided name for the device
+        device_room: User-provided room name
+        serial_number: Device serial number (from get_serial_number() or
+            manual entry from device label)
+
+    Returns:
+        API response dict with macAddress, deviceName, deviceRoom
+
+    Raises:
+        httpx.HTTPStatusError: If registration fails
+
+    Example:
+        >>> token = sign_in("user@example.com", "password")
+        >>> # Get serial from existing device
+        >>> serial = get_serial_number(token, "aa:bb:cc:dd:ee:ff")
+        >>> # Or use hex-encoded for safety
+        >>> serial_hex = serial_number_hex(serial)
+        >>> register_device(
+        ...     token,
+        ...     "aa:bb:cc:dd:ee:ff",
+        ...     "Living Room Stove",
+        ...     "Living Room",
+        ...     serial_hex
+        ... )
+    """
+    headers = get_headers(token)
+    url = get_endpoint("device")
+    data = {
+        "macAddress": format_mac(mac_address),
+        "deviceName": device_name,
+        "deviceRoom": device_room,
+        "serialNumber": serial_number,
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, json=data, headers=headers)
+        response.raise_for_status()
+        return response.json()
+
+
+@syncable
+async def edit_device(
+    token: str,
+    mac_address: str,
+    device_name: str,
+    device_room: str,
+) -> typing.Dict:
+    """Update device name and room.
+
+    Unlike register_device(), this does not require the serial number.
+
+    Args:
+        token: OAuth access token from sign_in()
+        mac_address: Device WiFi MAC address (e.g., "aa:bb:cc:dd:ee:ff")
+        device_name: New name for the device
+        device_room: New room name
+
+    Returns:
+        API response dict
+
+    Raises:
+        httpx.HTTPStatusError: If update fails
+    """
+    headers = get_headers(token)
+    mac = format_mac(mac_address)
+    url = get_endpoint(f"device/{mac}")
+    data = {
+        "deviceName": device_name,
+        "deviceRoom": device_room,
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.put(url, json=data, headers=headers)
+        response.raise_for_status()
+        return response.json()

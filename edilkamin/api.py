@@ -372,3 +372,10 @@ async def get_pellet_reserve(token: str, mac_address: str) -> bool:
 def device_info_get_serial_number(info: typing.Dict) -> str:
     """Get device serial number from cached info."""
     return info["component_info"]["motherboard"]["serial_number"]
+
+
+@syncable
+async def get_serial_number(token: str, mac_address: str) -> str:
+    """Get device serial number."""
+    info = await device_info(token, mac_address)
+    return device_info_get_serial_number(info)

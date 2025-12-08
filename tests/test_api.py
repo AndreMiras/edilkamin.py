@@ -421,3 +421,13 @@ def test_device_info_get_serial_number():
     serial = "ABC123456"
     info = {"component_info": {"motherboard": {"serial_number": serial}}}
     assert api.device_info_get_serial_number(info) == serial
+
+
+def test_get_serial_number(respx_mock: Router):
+    serial = "ABC123456"
+    json_response = {"component_info": {"motherboard": {"serial_number": serial}}}
+    route = respx_mock.get(
+        "https://fxtj7xkgc6.execute-api.eu-central-1.amazonaws.com/prod/device/aabbccddeeff/info"
+    ) % Response(status_code=200, json=json_response)
+    assert api.get_serial_number(token, mac_address) == serial
+    assert route.called

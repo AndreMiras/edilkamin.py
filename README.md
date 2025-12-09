@@ -32,6 +32,56 @@ edilkamin.set_power_off(token, mac_address)
 ```
 For more advanced usage read the [documentation](https://edilkamin.readthedocs.io/en/latest/).
 
+## Command Line Interface
+
+After installation, you can control your stove directly from the terminal:
+
+```sh
+# Discover nearby Edilkamin devices via Bluetooth
+edilkamin discover
+
+# Get device information
+edilkamin info --username USERNAME --password PASSWORD --mac-address MAC
+
+# Turn the stove on
+edilkamin power-on --username USERNAME --password PASSWORD --mac-address MAC
+
+# Turn the stove off
+edilkamin power-off --username USERNAME --password PASSWORD --mac-address MAC
+```
+
+You can also run via Python module:
+
+```sh
+python -m edilkamin info --username USERNAME --password PASSWORD --mac-address MAC
+```
+
+### Environment Variables
+
+Instead of passing credentials on every command, set environment variables:
+
+```sh
+export EDILKAMIN_USERNAME="your_username"
+export EDILKAMIN_PASSWORD="your_password"
+export EDILKAMIN_MAC_ADDRESS="AA:BB:CC:DD:EE:FF"
+
+# Then simply run:
+edilkamin info
+edilkamin power-on
+edilkamin power-off
+```
+
+### Command Options
+
+| Option | Short | Environment Variable | Description |
+|--------|-------|---------------------|-------------|
+| `--username` | `-u` | `EDILKAMIN_USERNAME` | Account username |
+| `--password` | `-p` | `EDILKAMIN_PASSWORD` | Account password |
+| `--mac-address` | `-m` | `EDILKAMIN_MAC_ADDRESS` | Device MAC address |
+| `--legacy` | | `EDILKAMIN_USE_LEGACY_API` | Use legacy API (deprecated) |
+
+Use `edilkamin --help` or `edilkamin <command> --help` for more details.
+
 ## Tests
 
 ```sh

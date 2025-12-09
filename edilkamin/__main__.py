@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import sys
+import warnings
 
 from edilkamin.api import device_info, set_power_off, set_power_on, sign_in
 from edilkamin.ble import discover_devices
@@ -24,6 +25,19 @@ def get_env_or_arg(
     if value is None:
         value = os.environ.get(env_name)
     return value
+
+
+def get_use_legacy_api(args: argparse.Namespace) -> bool:
+    """Get legacy API setting from args or environment.
+
+    Returns True if legacy API should be used.
+    """
+    # CLI flag takes precedence
+    if getattr(args, "legacy", False):
+        return True
+    # Fall back to environment variable
+    env_value = os.environ.get("EDILKAMIN_USE_LEGACY_API", "").lower()
+    return env_value in ("1", "true", "yes")
 
 
 def get_credentials(
@@ -49,10 +63,19 @@ def get_credentials(
     return username, password, mac_address
 
 
-def authenticate(username: str, password: str) -> str | int:
+def authenticate(
+    username: str, password: str, use_legacy_api: bool = False
+) -> str | int:
     """Sign in and return token, or error exit code on failure."""
+    if use_legacy_api:
+        warnings.warn(
+            "Using legacy API endpoint (deprecated). "
+            "The --legacy flag will be removed in a future version.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     try:
-        return sign_in(username, password)
+        return sign_in(username, password, use_legacy_api)
     except Exception as e:
         return cli_error(f"Authentication failed: {e}")
 
@@ -84,13 +107,14 @@ def cmd_info(args: argparse.Namespace) -> int:
     if isinstance(creds, int):
         return creds
     username, password, mac_address = creds
+    use_legacy_api = get_use_legacy_api(args)
 
-    token = authenticate(username, password)
+    token = authenticate(username, password, use_legacy_api)
     if isinstance(token, int):
         return token
 
     try:
-        info = device_info(token, mac_address)
+        info = device_info(token, mac_address, use_legacy_api)
     except Exception as e:
         return cli_error(f"Failed to get device info: {e}")
 
@@ -107,13 +131,14 @@ def cmd_power_on(args: argparse.Namespace) -> int:
     if isinstance(creds, int):
         return creds
     username, password, mac_address = creds
+    use_legacy_api = get_use_legacy_api(args)
 
-    token = authenticate(username, password)
+    token = authenticate(username, password, use_legacy_api)
     if isinstance(token, int):
         return token
 
     try:
-        result = set_power_on(token, mac_address)
+        result = set_power_on(token, mac_address, use_legacy_api)
         print(result)
         return 0
     except Exception as e:
@@ -126,13 +151,14 @@ def cmd_power_off(args: argparse.Namespace) -> int:
     if isinstance(creds, int):
         return creds
     username, password, mac_address = creds
+    use_legacy_api = get_use_legacy_api(args)
 
-    token = authenticate(username, password)
+    token = authenticate(username, password, use_legacy_api)
     if isinstance(token, int):
         return token
 
     try:
-        result = set_power_off(token, mac_address)
+        result = set_power_off(token, mac_address, use_legacy_api)
         print(result)
         return 0
     except Exception as e:
@@ -157,6 +183,11 @@ def create_auth_parser() -> argparse.ArgumentParser:
         "-m",
         dest="mac_address",
         help="Device MAC address (or set EDILKAMIN_MAC_ADDRESS)",
+    )
+    auth_parser.add_argument(
+        "--legacy",
+        action="store_true",
+        help="Use legacy API endpoint (deprecated, or set EDILKAMIN_USE_LEGACY_API)",
     )
     return auth_parser
 

@@ -16,12 +16,24 @@ class Power(Enum):
     ON = 1
 
 
-def sign_in(username: str, password: str) -> str:
-    """Sign in and return token."""
+def sign_in(username: str, password: str, use_legacy_api: bool = False) -> str:
+    """Sign in and return token.
+
+    Args:
+        username: Edilkamin account username
+        password: Edilkamin account password
+        use_legacy_api: If True, use old AWS API and access_token.
+                       If False (default), use new API and id_token.
+
+    Returns:
+        JWT token for API authentication
+    """
     cognito = Cognito(constants.USER_POOL_ID, constants.CLIENT_ID, username=username)
     cognito.authenticate(password)
     user = cognito.get_user()
-    return user._metadata["id_token"]
+    # New API uses id_token, old API uses access_token
+    token_key = "access_token" if use_legacy_api else "id_token"
+    return user._metadata[token_key]
 
 
 def format_mac(mac: str):
@@ -29,14 +41,21 @@ def format_mac(mac: str):
 
 
 @syncable
-async def device_info(token: str, mac: str) -> typing.Dict:
+async def device_info(
+    token: str, mac: str, use_legacy_api: bool = False
+) -> typing.Dict:
     """Retrieve device info for a given MAC address in the format `aabbccddeeff`.
 
     Automatically decompresses any gzip-compressed Buffer fields in the response.
+
+    Args:
+        token: JWT token from sign_in()
+        mac: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
     """
     headers = get_headers(token)
     mac = format_mac(mac)
-    url = get_endpoint(f"device/{mac}/info")
+    url = get_endpoint(f"device/{mac}/info", use_legacy_api)
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers)
         response.raise_for_status()
@@ -46,13 +65,22 @@ async def device_info(token: str, mac: str) -> typing.Dict:
 
 
 @syncable
-async def mqtt_command(token: str, mac_address: str, payload: typing.Dict) -> str:
-    """
-    Send a MQTT command to the device identified with the MAC address.
-    Return the response string.
+async def mqtt_command(
+    token: str, mac_address: str, payload: typing.Dict, use_legacy_api: bool = False
+) -> str:
+    """Send a MQTT command to the device identified with the MAC address.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        payload: Command payload
+        use_legacy_api: If True, use old AWS API URL
+
+    Returns:
+        Response string from API
     """
     headers = get_headers(token)
-    url = get_endpoint("mqtt/command")
+    url = get_endpoint("mqtt/command", use_legacy_api)
     data = {"mac_address": format_mac(mac_address), **payload}
     async with httpx.AsyncClient() as client:
         response = await client.put(url, json=data, headers=headers)
@@ -61,23 +89,39 @@ async def mqtt_command(token: str, mac_address: str, payload: typing.Dict) -> st
 
 
 @syncable
-async def check_connection(token: str, mac_address: str) -> str:
+async def check_connection(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> str:
+    """Check if the token is still valid.
+
+    Returns "Command 00030529000154df executed successfully" on success.
+    Raises an `HTTPError` exception otherwise.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
     """
-    Check if the token is still valid.
-    Return a "Command 00030529000154df executed successfully" on success.
-    Raise an `HTTPError` exception otherwise.
-    """
-    return await mqtt_command(token, mac_address, {"name": "check"})
+    return await mqtt_command(token, mac_address, {"name": "check"}, use_legacy_api)
 
 
 @syncable
-async def set_power(token: str, mac_address: str, power: Power) -> str:
-    """
-    Set device power.
-    Return response string e.g. "Command 0123456789abcdef executed successfully".
+async def set_power(
+    token: str, mac_address: str, power: Power, use_legacy_api: bool = False
+) -> str:
+    """Set device power.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        power: Power.ON or Power.OFF
+        use_legacy_api: If True, use old AWS API URL
+
+    Returns:
+        Response string e.g. "Command 0123456789abcdef executed successfully"
     """
     return await mqtt_command(
-        token, mac_address, {"name": "power", "value": power.value}
+        token, mac_address, {"name": "power", "value": power.value}, use_legacy_api
     )
 
 
@@ -87,20 +131,46 @@ def device_info_get_power(info: typing.Dict) -> Power:
 
 
 @syncable
-async def get_power(token: str, mac_address: str) -> Power:
-    """Get device current power value."""
-    info = await device_info(token, mac_address)
+async def get_power(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> Power:
+    """Get device current power value.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    info = await device_info(token, mac_address, use_legacy_api)
     return device_info_get_power(info)
 
 
 @syncable
-async def set_power_on(token: str, mac_address: str) -> str:
-    return await set_power(token, mac_address, Power.ON)
+async def set_power_on(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> str:
+    """Turn on device.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    return await set_power(token, mac_address, Power.ON, use_legacy_api)
 
 
 @syncable
-async def set_power_off(token: str, mac_address: str) -> str:
-    return await set_power(token, mac_address, Power.OFF)
+async def set_power_off(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> str:
+    """Turn off device.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    return await set_power(token, mac_address, Power.OFF, use_legacy_api)
 
 
 def device_info_get_alarm_reset(info: typing.Dict) -> bool:
@@ -109,9 +179,17 @@ def device_info_get_alarm_reset(info: typing.Dict) -> bool:
 
 
 @syncable
-async def get_alarm_reset(token: str, mac_address: str) -> bool:
-    """Get alarm reset value."""
-    info = await device_info(token, mac_address)
+async def get_alarm_reset(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> bool:
+    """Get alarm reset value.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    info = await device_info(token, mac_address, use_legacy_api)
     return device_info_get_alarm_reset(info)
 
 
@@ -121,18 +199,34 @@ def device_info_get_perform_cochlea_loading(info: typing.Dict) -> bool:
 
 
 @syncable
-async def get_perform_cochlea_loading(token: str, mac_address: str) -> bool:
-    """Get perform cochlea loading state."""
-    info = await device_info(token, mac_address)
+async def get_perform_cochlea_loading(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> bool:
+    """Get perform cochlea loading state.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    info = await device_info(token, mac_address, use_legacy_api)
     return device_info_get_perform_cochlea_loading(info)
 
 
 @syncable
-async def set_perform_cochlea_loading(token: str, mac_address: str, value: bool) -> str:
-    """Set the perform cochlea loading value."""
-    return await mqtt_command(
-        token, mac_address, {"name": "cochlea_loading", "value": bool(value)}
-    )
+async def set_perform_cochlea_loading(
+    token: str, mac_address: str, value: bool, use_legacy_api: bool = False
+) -> str:
+    """Set the perform cochlea loading value.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        value: True to enable, False to disable
+        use_legacy_api: If True, use old AWS API URL
+    """
+    payload = {"name": "cochlea_loading", "value": bool(value)}
+    return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
 def device_info_get_environment_temperature(info: typing.Dict) -> int:
@@ -141,9 +235,17 @@ def device_info_get_environment_temperature(info: typing.Dict) -> int:
 
 
 @syncable
-async def get_environment_temperature(token: str, mac_address: str) -> Power:
-    """Get environment temperature coming from sensor."""
-    info = await device_info(token, mac_address)
+async def get_environment_temperature(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> Power:
+    """Get environment temperature coming from sensor.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    info = await device_info(token, mac_address, use_legacy_api)
     return device_info_get_environment_temperature(info)
 
 
@@ -153,21 +255,37 @@ def device_info_get_target_temperature(info: typing.Dict) -> int:
 
 
 @syncable
-async def get_target_temperature(token: str, mac_address: str) -> Power:
-    """Get target temperature value."""
-    info = await device_info(token, mac_address)
+async def get_target_temperature(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> Power:
+    """Get target temperature value.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    info = await device_info(token, mac_address, use_legacy_api)
     return device_info_get_target_temperature(info)
 
 
 @syncable
-async def set_target_temperature(token: str, mac_address: str, temperature: int) -> str:
+async def set_target_temperature(
+    token: str, mac_address: str, temperature: int, use_legacy_api: bool = False
+) -> str:
+    """Set target temperature in degree.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        temperature: Target temperature in degrees
+        use_legacy_api: If True, use old AWS API URL
+
+    Returns:
+        Response string e.g. "Command 0006052500b558ab executed successfully"
     """
-    Set target temperature in degree.
-    Return response string e.g. "Command 0006052500b558ab executed successfully".
-    """
-    return await mqtt_command(
-        token, mac_address, {"name": "enviroment_1_temperature", "value": temperature}
-    )
+    payload = {"name": "enviroment_1_temperature", "value": temperature}
+    return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
 def valid_fan_id_or_warning(info: typing.Dict, fan_id):
@@ -183,26 +301,44 @@ def device_info_get_fan_speed(info: typing.Dict, fan_id: int) -> int:
 
 
 @syncable
-async def get_fan_speed(token: str, mac_address: str, fan_id: int) -> int:
-    """Get fan id speed value."""
-    info = await device_info(token, mac_address)
+async def get_fan_speed(
+    token: str, mac_address: str, fan_id: int, use_legacy_api: bool = False
+) -> int:
+    """Get fan id speed value.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        fan_id: Fan ID to query
+        use_legacy_api: If True, use old AWS API URL
+    """
+    info = await device_info(token, mac_address, use_legacy_api)
     if not valid_fan_id_or_warning(info, fan_id):
         return 0
     return device_info_get_fan_speed(info, fan_id)
 
 
 @syncable
-async def set_fan_speed(token: str, mac_address: str, fan_id: int, speed: int) -> str:
+async def set_fan_speed(
+    token: str, mac_address: str, fan_id: int, speed: int, use_legacy_api: bool = False
+) -> str:
+    """Set fan id speed.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        fan_id: Fan ID to set
+        speed: Speed value
+        use_legacy_api: If True, use old AWS API URL
+
+    Returns:
+        Response string e.g. "Command 0123456789abcdef executed successfully"
     """
-    Set fan id speed.
-    Return response string e.g. "Command 0123456789abcdef executed successfully".
-    """
-    info = await device_info(token, mac_address)
+    info = await device_info(token, mac_address, use_legacy_api)
     if not valid_fan_id_or_warning(info, fan_id):
         return ""
-    return await mqtt_command(
-        token, mac_address, {"name": f"fan_{fan_id}_speed", "value": speed}
-    )
+    payload = {"name": f"fan_{fan_id}_speed", "value": speed}
+    return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
 def device_info_get_airkare(info: typing.Dict) -> bool:
@@ -211,21 +347,37 @@ def device_info_get_airkare(info: typing.Dict) -> bool:
 
 
 @syncable
-async def get_airkare(token: str, mac_address: str) -> bool:
-    """Get airkare status."""
-    info = await device_info(token, mac_address)
+async def get_airkare(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> bool:
+    """Get airkare status.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    info = await device_info(token, mac_address, use_legacy_api)
     return device_info_get_airkare(info)
 
 
 @syncable
-async def set_airkare(token: str, mac_address: str, airkare: bool) -> str:
+async def set_airkare(
+    token: str, mac_address: str, airkare: bool, use_legacy_api: bool = False
+) -> str:
+    """Set airkare.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        airkare: True to enable, False to disable
+        use_legacy_api: If True, use old AWS API URL
+
+    Returns:
+        Response string e.g. "Command 0123456789abcdef executed successfully"
     """
-    Set airkare.
-    Return response string e.g. "Command 0123456789abcdef executed successfully".
-    """
-    return await mqtt_command(
-        token, mac_address, {"name": "airkare_function", "value": airkare}
-    )
+    payload = {"name": "airkare_function", "value": airkare}
+    return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
 def device_info_get_relax_mode(info: typing.Dict) -> bool:
@@ -234,21 +386,37 @@ def device_info_get_relax_mode(info: typing.Dict) -> bool:
 
 
 @syncable
-async def get_relax_mode(token: str, mac_address: str) -> bool:
-    """Get relax mode status."""
-    info = await device_info(token, mac_address)
+async def get_relax_mode(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> bool:
+    """Get relax mode status.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    info = await device_info(token, mac_address, use_legacy_api)
     return device_info_get_relax_mode(info)
 
 
 @syncable
-async def set_relax_mode(token: str, mac_address: str, relax_mode: bool) -> str:
+async def set_relax_mode(
+    token: str, mac_address: str, relax_mode: bool, use_legacy_api: bool = False
+) -> str:
+    """Set relax mode.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        relax_mode: True to enable, False to disable
+        use_legacy_api: If True, use old AWS API URL
+
+    Returns:
+        Response string e.g. "Command 0123456789abcdef executed successfully"
     """
-    Set relax mode.
-    Return response string e.g. "Command 0123456789abcdef executed successfully".
-    """
-    return await mqtt_command(
-        token, mac_address, {"name": "relax_mode", "value": relax_mode}
-    )
+    payload = {"name": "relax_mode", "value": relax_mode}
+    return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
 def device_info_get_manual_power_level(info: typing.Dict) -> int:
@@ -257,23 +425,37 @@ def device_info_get_manual_power_level(info: typing.Dict) -> int:
 
 
 @syncable
-async def get_manual_power_level(token: str, mac_address: str) -> int:
-    """Get manual power level value."""
-    info = await device_info(token, mac_address)
+async def get_manual_power_level(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> int:
+    """Get manual power level value.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    info = await device_info(token, mac_address, use_legacy_api)
     return device_info_get_manual_power_level(info)
 
 
 @syncable
 async def set_manual_power_level(
-    token: str, mac_address: str, manual_power_level: int
+    token: str, mac_address: str, manual_power_level: int, use_legacy_api: bool = False
 ) -> str:
+    """Set manual power level value.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        manual_power_level: Power level to set
+        use_legacy_api: If True, use old AWS API URL
+
+    Returns:
+        Response string e.g. "Command 0123456789abcdef executed successfully"
     """
-    Set manual power level value.
-    Return response string e.g. "Command 0123456789abcdef executed successfully".
-    """
-    return await mqtt_command(
-        token, mac_address, {"name": "power_level", "value": manual_power_level}
-    )
+    payload = {"name": "power_level", "value": manual_power_level}
+    return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
 def device_info_get_standby_mode(info: typing.Dict) -> bool:
@@ -282,26 +464,42 @@ def device_info_get_standby_mode(info: typing.Dict) -> bool:
 
 
 @syncable
-async def get_standby_mode(token: str, mac_address: str) -> bool:
-    """Get standby mode status."""
-    info = await device_info(token, mac_address)
+async def get_standby_mode(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> bool:
+    """Get standby mode status.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    info = await device_info(token, mac_address, use_legacy_api)
     return device_info_get_standby_mode(info)
 
 
 @syncable
-async def set_standby_mode(token: str, mac_address: str, standby_mode: bool) -> str:
+async def set_standby_mode(
+    token: str, mac_address: str, standby_mode: bool, use_legacy_api: bool = False
+) -> str:
+    """Set standby mode.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        standby_mode: True to enable, False to disable
+        use_legacy_api: If True, use old AWS API URL
+
+    Returns:
+        Response string e.g. "Command 0123456789abcdef executed successfully"
     """
-    Set standby mode.
-    Return response string e.g. "Command 0123456789abcdef executed successfully".
-    """
-    info = await device_info(token, mac_address)
+    info = await device_info(token, mac_address, use_legacy_api)
     is_auto = info["nvm"]["user_parameters"]["is_auto"]
     if not is_auto:
         warnings.warn("Standby mode is only available from auto mode.", stacklevel=2)
         return ""
-    return await mqtt_command(
-        token, mac_address, {"name": "standby_mode", "value": standby_mode}
-    )
+    payload = {"name": "standby_mode", "value": standby_mode}
+    return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
 def device_info_get_chrono_mode(info: typing.Dict) -> bool:
@@ -310,21 +508,37 @@ def device_info_get_chrono_mode(info: typing.Dict) -> bool:
 
 
 @syncable
-async def get_chrono_mode(token: str, mac_address: str) -> bool:
-    """Get chrono mode status."""
-    info = await device_info(token, mac_address)
+async def get_chrono_mode(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> bool:
+    """Get chrono mode status.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    info = await device_info(token, mac_address, use_legacy_api)
     return device_info_get_chrono_mode(info)
 
 
 @syncable
-async def set_chrono_mode(token: str, mac_address: str, chrono_mode: bool) -> str:
+async def set_chrono_mode(
+    token: str, mac_address: str, chrono_mode: bool, use_legacy_api: bool = False
+) -> str:
+    """Set chrono mode.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        chrono_mode: True to enable, False to disable
+        use_legacy_api: If True, use old AWS API URL
+
+    Returns:
+        Response string e.g. "Command 0123456789abcdef executed successfully"
     """
-    Set chrono mode.
-    Return response string e.g. "Command 0123456789abcdef executed successfully".
-    """
-    return await mqtt_command(
-        token, mac_address, {"name": "chrono_mode", "value": chrono_mode}
-    )
+    payload = {"name": "chrono_mode", "value": chrono_mode}
+    return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
 def device_info_get_easy_timer(info: typing.Dict) -> int:
@@ -334,20 +548,37 @@ def device_info_get_easy_timer(info: typing.Dict) -> int:
 
 
 @syncable
-async def get_easy_timer(token: str, mac_address: str) -> int:
-    """Get easy timer value, return 0 if disabled."""
-    info = await device_info(token, mac_address)
+async def get_easy_timer(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> int:
+    """Get easy timer value, return 0 if disabled.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    info = await device_info(token, mac_address, use_legacy_api)
     return device_info_get_easy_timer(info)
 
 
 @syncable
-async def set_easy_timer(token: str, mac_address: str, easy_timer: int) -> str:
-    """
-    Set easy timer value.
-    Return response string e.g. "Command 0123456789abcdef executed successfully".
+async def set_easy_timer(
+    token: str, mac_address: str, easy_timer: int, use_legacy_api: bool = False
+) -> str:
+    """Set easy timer value.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        easy_timer: Timer value to set
+        use_legacy_api: If True, use old AWS API URL
+
+    Returns:
+        Response string e.g. "Command 0123456789abcdef executed successfully"
     """
     return await mqtt_command(
-        token, mac_address, {"name": "easytimer", "value": easy_timer}
+        token, mac_address, {"name": "easytimer", "value": easy_timer}, use_legacy_api
     )
 
 
@@ -357,9 +588,17 @@ def device_info_get_autonomy_time(info: typing.Dict) -> int:
 
 
 @syncable
-async def get_autonomy_time(token: str, mac_address: str) -> int:
-    """Get autonomy time."""
-    info = await device_info(token, mac_address)
+async def get_autonomy_time(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> int:
+    """Get autonomy time.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    info = await device_info(token, mac_address, use_legacy_api)
     return device_info_get_autonomy_time(info)
 
 
@@ -369,9 +608,17 @@ def device_info_get_pellet_reserve(info: typing.Dict) -> bool:
 
 
 @syncable
-async def get_pellet_reserve(token: str, mac_address: str) -> bool:
-    """Get pellet reserve status."""
-    info = await device_info(token, mac_address)
+async def get_pellet_reserve(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> bool:
+    """Get pellet reserve status.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
+    """
+    info = await device_info(token, mac_address, use_legacy_api)
     return device_info_get_pellet_reserve(info)
 
 
@@ -386,14 +633,21 @@ def device_info_get_serial_number(info: typing.Dict) -> str:
 
 
 @syncable
-async def get_serial_number(token: str, mac_address: str) -> str:
+async def get_serial_number(
+    token: str, mac_address: str, use_legacy_api: bool = False
+) -> str:
     """Get device serial number.
 
     Note: Serial numbers may contain binary/control characters from device
     firmware. Use serial_number_hex() or serial_number_display() for safe
     string representations.
+
+    Args:
+        token: JWT token from sign_in()
+        mac_address: Device MAC address
+        use_legacy_api: If True, use old AWS API URL
     """
-    info = await device_info(token, mac_address)
+    info = await device_info(token, mac_address, use_legacy_api)
     return device_info_get_serial_number(info)
 
 
@@ -465,6 +719,7 @@ async def register_device(
     device_name: str,
     device_room: str,
     serial_number: str,
+    use_legacy_api: bool = False,
 ) -> typing.Dict:
     """Register/associate a device with the user account.
 
@@ -483,6 +738,7 @@ async def register_device(
         device_room: User-provided room name
         serial_number: Device serial number (from get_serial_number() or
             manual entry from device label)
+        use_legacy_api: If True, use old AWS API URL
 
     Returns:
         API response dict with macAddress, deviceName, deviceRoom
@@ -505,7 +761,7 @@ async def register_device(
         ... )
     """
     headers = get_headers(token)
-    url = get_endpoint("device")
+    url = get_endpoint("device", use_legacy_api)
     data = {
         "macAddress": format_mac(mac_address),
         "deviceName": device_name,
@@ -524,6 +780,7 @@ async def edit_device(
     mac_address: str,
     device_name: str,
     device_room: str,
+    use_legacy_api: bool = False,
 ) -> typing.Dict:
     """Update device name and room.
 
@@ -534,6 +791,7 @@ async def edit_device(
         mac_address: Device WiFi MAC address (e.g., "aa:bb:cc:dd:ee:ff")
         device_name: New name for the device
         device_room: New room name
+        use_legacy_api: If True, use old AWS API URL
 
     Returns:
         API response dict
@@ -543,7 +801,7 @@ async def edit_device(
     """
     headers = get_headers(token)
     mac = format_mac(mac_address)
-    url = get_endpoint(f"device/{mac}")
+    url = get_endpoint(f"device/{mac}", use_legacy_api)
     data = {
         "deviceName": device_name,
         "deviceRoom": device_room,

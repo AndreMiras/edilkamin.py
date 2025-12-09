@@ -9,6 +9,7 @@ from edilkamin.__main__ import (
     cmd_power_off,
     cmd_power_on,
     create_parser,
+    get_use_legacy_api,
     main,
 )
 
@@ -23,6 +24,7 @@ def make_args(**kwargs):
         "password": None,
         "mac_address": None,
         "pretty": False,
+        "legacy": False,
     }
     defaults.update(kwargs)
     return type("Args", (), defaults)()
@@ -132,6 +134,26 @@ class TestCreateParser:
         assert args.username == "user"
         assert args.password == "pass"
         assert args.mac_address == "aa:bb:cc:dd:ee:ff"
+
+    def test_info_accepts_legacy_flag(self):
+        parser = create_parser()
+        args = parser.parse_args(["info", "--legacy"])
+        assert args.legacy is True
+
+    def test_info_legacy_flag_defaults_false(self):
+        parser = create_parser()
+        args = parser.parse_args(["info"])
+        assert args.legacy is False
+
+    def test_power_on_accepts_legacy_flag(self):
+        parser = create_parser()
+        args = parser.parse_args(["power-on", "--legacy"])
+        assert args.legacy is True
+
+    def test_power_off_accepts_legacy_flag(self):
+        parser = create_parser()
+        args = parser.parse_args(["power-off", "--legacy"])
+        assert args.legacy is True
 
 
 class TestCmdDiscover:
@@ -252,7 +274,7 @@ class TestCmdInfo:
         ) as mock_sign_in:
             with mock.patch("edilkamin.__main__.device_info", return_value={}):
                 cmd_info(args)
-        mock_sign_in.assert_called_once_with("env_user", "env_pass")
+        mock_sign_in.assert_called_once_with("env_user", "env_pass", False)
 
     def test_info_with_buffer_response(self, capsys):
         """CLI should display decompressed buffer data as JSON."""
@@ -362,7 +384,7 @@ class TestCmdPowerOn:
                 return_value="Command executed successfully",
             ):
                 cmd_power_on(args)
-        mock_sign_in.assert_called_once_with("env_user", "env_pass")
+        mock_sign_in.assert_called_once_with("env_user", "env_pass", False)
 
 
 class TestCmdPowerOff:
@@ -443,7 +465,7 @@ class TestCmdPowerOff:
                 return_value="Command executed successfully",
             ):
                 cmd_power_off(args)
-        mock_sign_in.assert_called_once_with("env_user", "env_pass")
+        mock_sign_in.assert_called_once_with("env_user", "env_pass", False)
 
 
 class TestMain:
@@ -455,3 +477,105 @@ class TestMain:
         assert result == 0
         captured = capsys.readouterr()
         assert "usage:" in captured.out.lower() or "edilkamin" in captured.out
+
+
+class TestLegacyApi:
+    """Tests for legacy API flag functionality."""
+
+    def test_get_use_legacy_api_from_flag(self):
+        """--legacy flag should return True."""
+        args = make_args(legacy=True)
+        assert get_use_legacy_api(args) is True
+
+    def test_get_use_legacy_api_default_false(self):
+        """Default should be False (use new API)."""
+        args = make_args(legacy=False)
+        assert get_use_legacy_api(args) is False
+
+    def test_get_use_legacy_api_from_env_var(self, monkeypatch):
+        """EDILKAMIN_USE_LEGACY_API env var should set legacy mode."""
+        monkeypatch.setenv("EDILKAMIN_USE_LEGACY_API", "1")
+        args = make_args(legacy=False)
+        assert get_use_legacy_api(args) is True
+
+    def test_get_use_legacy_api_env_var_true(self, monkeypatch):
+        """EDILKAMIN_USE_LEGACY_API=true should set legacy mode."""
+        monkeypatch.setenv("EDILKAMIN_USE_LEGACY_API", "true")
+        args = make_args(legacy=False)
+        assert get_use_legacy_api(args) is True
+
+    def test_get_use_legacy_api_env_var_yes(self, monkeypatch):
+        """EDILKAMIN_USE_LEGACY_API=yes should set legacy mode."""
+        monkeypatch.setenv("EDILKAMIN_USE_LEGACY_API", "yes")
+        args = make_args(legacy=False)
+        assert get_use_legacy_api(args) is True
+
+    def test_get_use_legacy_api_env_var_invalid(self, monkeypatch):
+        """Invalid env var value should not enable legacy mode."""
+        monkeypatch.setenv("EDILKAMIN_USE_LEGACY_API", "invalid")
+        args = make_args(legacy=False)
+        assert get_use_legacy_api(args) is False
+
+    def test_get_use_legacy_api_flag_overrides_env(self, monkeypatch):
+        """CLI flag should override environment variable."""
+        monkeypatch.setenv("EDILKAMIN_USE_LEGACY_API", "0")
+        args = make_args(legacy=True)
+        assert get_use_legacy_api(args) is True
+
+    def test_info_passes_legacy_to_sign_in(self):
+        """Info command should pass use_legacy_api to sign_in."""
+        args = make_args(
+            username="user",
+            password="pass",
+            mac_address="aabbccddeeff",
+            pretty=False,
+            legacy=True,
+        )
+        with mock.patch(
+            "edilkamin.__main__.sign_in", return_value="token"
+        ) as mock_sign_in:
+            with mock.patch("edilkamin.__main__.device_info", return_value={}):
+                cmd_info(args)
+        mock_sign_in.assert_called_once_with("user", "pass", True)
+
+    def test_info_passes_legacy_to_device_info(self):
+        """Info command should pass use_legacy_api to device_info."""
+        args = make_args(
+            username="user",
+            password="pass",
+            mac_address="aabbccddeeff",
+            pretty=False,
+            legacy=True,
+        )
+        with mock.patch("edilkamin.__main__.sign_in", return_value="token"):
+            with mock.patch(
+                "edilkamin.__main__.device_info", return_value={}
+            ) as mock_device_info:
+                cmd_info(args)
+        mock_device_info.assert_called_once_with("token", "aabbccddeeff", True)
+
+    def test_power_on_passes_legacy_to_set_power_on(self):
+        """Power-on command should pass use_legacy_api to set_power_on."""
+        args = make_args(
+            username="user", password="pass", mac_address="aabbccddeeff", legacy=True
+        )
+        with mock.patch("edilkamin.__main__.sign_in", return_value="token"):
+            with mock.patch(
+                "edilkamin.__main__.set_power_on",
+                return_value="Command executed successfully",
+            ) as mock_set_power_on:
+                cmd_power_on(args)
+        mock_set_power_on.assert_called_once_with("token", "aabbccddeeff", True)
+
+    def test_power_off_passes_legacy_to_set_power_off(self):
+        """Power-off command should pass use_legacy_api to set_power_off."""
+        args = make_args(
+            username="user", password="pass", mac_address="aabbccddeeff", legacy=True
+        )
+        with mock.patch("edilkamin.__main__.sign_in", return_value="token"):
+            with mock.patch(
+                "edilkamin.__main__.set_power_off",
+                return_value="Command executed successfully",
+            ) as mock_set_power_off:
+                cmd_power_off(args)
+        mock_set_power_off.assert_called_once_with("token", "aabbccddeeff", True)

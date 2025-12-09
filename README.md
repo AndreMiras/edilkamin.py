@@ -32,6 +32,38 @@ edilkamin.set_power_off(token, mac_address)
 ```
 For more advanced usage read the [documentation](https://edilkamin.readthedocs.io/en/latest/).
 
+## API Endpoints
+
+The library supports two backend endpoints:
+
+### New API (Default)
+
+```python
+import edilkamin
+
+# Uses new API endpoint by default
+token = edilkamin.sign_in(username, password)
+info = edilkamin.device_info(token, mac_address)
+edilkamin.set_power_on(token, mac_address)
+```
+
+### Legacy API
+
+```python
+import edilkamin
+
+# Use legacy AWS endpoint
+token = edilkamin.sign_in(username, password, use_legacy_api=True)
+info = edilkamin.device_info(token, mac_address, use_legacy_api=True)
+edilkamin.set_power_on(token, mac_address, use_legacy_api=True)
+```
+
+For CLI, use the `--legacy` flag:
+
+```sh
+edilkamin info --username USERNAME --password PASSWORD --mac-address MAC --legacy
+```
+
 ## Command Line Interface
 
 After installation, you can control your stove directly from the terminal:

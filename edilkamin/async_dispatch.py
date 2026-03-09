@@ -23,7 +23,7 @@ Example:
 
 import asyncio
 from functools import wraps
-from typing import Any, Awaitable, Callable, TypeVar, Union, cast
+from typing import Any, Awaitable, Callable, TypeVar, cast
 
 import anyio
 
@@ -41,7 +41,7 @@ class AsyncDispatch:
 
         self.sync_func = sync_func
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Union[Awaitable[T], T]:
+    def __call__(self, *args: Any, **kwargs: Any) -> Awaitable[T] | T:
         try:
             asyncio.get_running_loop()
             return self.async_func(*args, **kwargs)

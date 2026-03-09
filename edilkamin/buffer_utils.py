@@ -2,11 +2,11 @@
 
 import gzip
 import json
-import typing
 import warnings
+from typing import Any
 
 
-def is_buffer(value: typing.Any) -> bool:
+def is_buffer(value: Any) -> bool:
     """Check if a value is a Node.js Buffer object.
 
     Node.js Buffer format: {"type": "Buffer", "data": [int, int, ...]}
@@ -32,7 +32,7 @@ def is_buffer(value: typing.Any) -> bool:
     return value.get("type") == "Buffer" and "data" in value
 
 
-def decompress_buffer(buffer_obj: typing.Dict) -> typing.Any:
+def decompress_buffer(buffer_obj: dict) -> Any:
     """Decompress a Node.js Buffer containing gzip data.
 
     Args:
@@ -77,7 +77,7 @@ def decompress_buffer(buffer_obj: typing.Dict) -> typing.Any:
         return buffer_obj
 
 
-def process_response(response: typing.Dict) -> typing.Dict:
+def process_response(response: dict) -> dict:
     """Recursively process API response, decompressing any Buffer fields.
 
     Args:

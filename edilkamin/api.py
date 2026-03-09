@@ -1,4 +1,3 @@
-import typing
 import warnings
 from enum import Enum
 
@@ -41,9 +40,7 @@ def format_mac(mac: str):
 
 
 @syncable
-async def device_info(
-    token: str, mac: str, use_legacy_api: bool = False
-) -> typing.Dict:
+async def device_info(token: str, mac: str, use_legacy_api: bool = False) -> dict:
     """Retrieve device info for a given MAC address in the format `aabbccddeeff`.
 
     Automatically decompresses any gzip-compressed Buffer fields in the response.
@@ -66,7 +63,7 @@ async def device_info(
 
 @syncable
 async def mqtt_command(
-    token: str, mac_address: str, payload: typing.Dict, use_legacy_api: bool = False
+    token: str, mac_address: str, payload: dict, use_legacy_api: bool = False
 ) -> str:
     """Send a MQTT command to the device identified with the MAC address.
 
@@ -125,7 +122,7 @@ async def set_power(
     )
 
 
-def device_info_get_power(info: typing.Dict) -> Power:
+def device_info_get_power(info: dict) -> Power:
     """Get device current power value from cached info."""
     return Power(info["status"]["commands"]["power"])
 
@@ -173,7 +170,7 @@ async def set_power_off(
     return await set_power(token, mac_address, Power.OFF, use_legacy_api)
 
 
-def device_info_get_alarm_reset(info: typing.Dict) -> bool:
+def device_info_get_alarm_reset(info: dict) -> bool:
     """Get alarm reset value from cached info."""
     return info["status"]["commands"]["alarm_reset"]
 
@@ -193,7 +190,7 @@ async def get_alarm_reset(
     return device_info_get_alarm_reset(info)
 
 
-def device_info_get_perform_cochlea_loading(info: typing.Dict) -> bool:
+def device_info_get_perform_cochlea_loading(info: dict) -> bool:
     """Get perform cochlea loading state from cached info."""
     return info["status"]["commands"]["perform_cochlea_loading"]
 
@@ -229,7 +226,7 @@ async def set_perform_cochlea_loading(
     return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
-def device_info_get_environment_temperature(info: typing.Dict) -> int:
+def device_info_get_environment_temperature(info: dict) -> int:
     """Get environment temperature value from cached info."""
     return info["status"]["temperatures"]["enviroment"]
 
@@ -249,7 +246,7 @@ async def get_environment_temperature(
     return device_info_get_environment_temperature(info)
 
 
-def device_info_get_target_temperature(info: typing.Dict) -> int:
+def device_info_get_target_temperature(info: dict) -> int:
     """Get target temperature value from cached info."""
     return info["nvm"]["user_parameters"]["enviroment_1_temperature"]
 
@@ -288,14 +285,14 @@ async def set_target_temperature(
     return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
-def valid_fan_id_or_warning(info: typing.Dict, fan_id):
+def valid_fan_id_or_warning(info: dict, fan_id):
     fans_number = info["nvm"]["installer_parameters"]["fans_number"]
     if fans_number < fan_id:
         warnings.warn(f"Only {fans_number} fan(s) available.", stacklevel=2)
     return fans_number >= fan_id
 
 
-def device_info_get_fan_speed(info: typing.Dict, fan_id: int) -> int:
+def device_info_get_fan_speed(info: dict, fan_id: int) -> int:
     """Get fan id speed value from cached info."""
     return info["status"]["fans"][f"fan_{fan_id}_speed"]
 
@@ -341,7 +338,7 @@ async def set_fan_speed(
     return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
-def device_info_get_airkare(info: typing.Dict) -> bool:
+def device_info_get_airkare(info: dict) -> bool:
     """Get airkare status from cached info."""
     return info["status"]["flags"]["is_airkare_active"]
 
@@ -380,7 +377,7 @@ async def set_airkare(
     return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
-def device_info_get_relax_mode(info: typing.Dict) -> bool:
+def device_info_get_relax_mode(info: dict) -> bool:
     """Get relax mode status from cached info."""
     return info["status"]["flags"]["is_relax_active"]
 
@@ -419,7 +416,7 @@ async def set_relax_mode(
     return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
-def device_info_get_manual_power_level(info: typing.Dict) -> int:
+def device_info_get_manual_power_level(info: dict) -> int:
     """Get manual power level value from cached info."""
     return info["nvm"]["user_parameters"]["manual_power"]
 
@@ -458,7 +455,7 @@ async def set_manual_power_level(
     return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
-def device_info_get_standby_mode(info: typing.Dict) -> bool:
+def device_info_get_standby_mode(info: dict) -> bool:
     """Get standby mode status from cached info."""
     return info["nvm"]["user_parameters"]["is_standby_active"]
 
@@ -502,7 +499,7 @@ async def set_standby_mode(
     return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
-def device_info_get_chrono_mode(info: typing.Dict) -> bool:
+def device_info_get_chrono_mode(info: dict) -> bool:
     """Get chrono mode status from cached info."""
     return info["status"]["flags"]["is_crono_active"]
 
@@ -541,7 +538,7 @@ async def set_chrono_mode(
     return await mqtt_command(token, mac_address, payload, use_legacy_api)
 
 
-def device_info_get_easy_timer(info: typing.Dict) -> int:
+def device_info_get_easy_timer(info: dict) -> int:
     """Get easy timer value from cached info."""
     easy_time_status = info["status"]["flags"]["is_easytimer_active"]
     return info["status"]["easytimer"]["time"] if easy_time_status else 0
@@ -582,7 +579,7 @@ async def set_easy_timer(
     )
 
 
-def device_info_get_autonomy_time(info: typing.Dict) -> int:
+def device_info_get_autonomy_time(info: dict) -> int:
     """Get autonomy time from cached info."""
     return info["status"]["pellet"]["autonomy_time"]
 
@@ -602,7 +599,7 @@ async def get_autonomy_time(
     return device_info_get_autonomy_time(info)
 
 
-def device_info_get_pellet_reserve(info: typing.Dict) -> bool:
+def device_info_get_pellet_reserve(info: dict) -> bool:
     """Get pellet reserve status from cached info."""
     return info["status"]["flags"]["is_pellet_in_reserve"]
 
@@ -622,7 +619,7 @@ async def get_pellet_reserve(
     return device_info_get_pellet_reserve(info)
 
 
-def device_info_get_serial_number(info: typing.Dict) -> str:
+def device_info_get_serial_number(info: dict) -> str:
     """Get device serial number from cached info.
 
     Note: Serial numbers may contain binary/control characters from device
@@ -720,7 +717,7 @@ async def register_device(
     device_room: str,
     serial_number: str,
     use_legacy_api: bool = False,
-) -> typing.Dict:
+) -> dict:
     """Register/associate a device with the user account.
 
     This function registers a new device or updates an existing registration.
@@ -781,7 +778,7 @@ async def edit_device(
     device_name: str,
     device_room: str,
     use_legacy_api: bool = False,
-) -> typing.Dict:
+) -> dict:
     """Update device name and room.
 
     Unlike register_device(), this does not require the serial number.

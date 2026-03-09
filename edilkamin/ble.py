@@ -1,7 +1,5 @@
 """Bluetooth Low Energy (BLE) functions for Edilkamin device discovery."""
 
-import typing
-
 # Import format_mac from api to avoid duplication
 from edilkamin.api import format_mac
 
@@ -31,8 +29,8 @@ def bluetooth_mac_to_wifi_mac(mac: str) -> str:
 
 
 def discover_devices_helper(
-    devices: typing.Tuple[typing.Dict, ...], convert: bool = True
-) -> typing.Tuple[str, ...]:
+    devices: tuple[dict, ...], convert: bool = True
+) -> tuple[str, ...]:
     """
     Filter discovered Bluetooth devices for Edilkamin devices.
 
@@ -57,7 +55,7 @@ def discover_devices_helper(
     return tuple(matching_devices)
 
 
-def discover_devices(convert: bool = True) -> typing.Tuple[str, ...]:
+def discover_devices(convert: bool = True) -> tuple[str, ...]:
     """
     Discover Edilkamin devices using Bluetooth.
 
@@ -72,7 +70,7 @@ def discover_devices(convert: bool = True) -> typing.Tuple[str, ...]:
     """
     import simplepyble
 
-    devices: typing.Tuple[typing.Dict, ...] = ()
+    devices: tuple[dict, ...] = ()
     adapters = simplepyble.Adapter.get_adapters()
     for adapter in adapters:
         adapter.scan_for(2000)
